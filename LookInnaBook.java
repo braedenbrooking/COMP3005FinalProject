@@ -83,6 +83,7 @@ public class LookInnaBook{
     }
 
     public static void customerLoop(Scanner scan){
+        //Login
         System.out.println("Connecting to Database...");
         String username = null;
         try(
@@ -107,8 +108,7 @@ public class LookInnaBook{
                 }else{
                     System.out.println("Login unsuccessful... Please Try Again");
                 }
-
-            
+            }
         }catch (Exception sqle){
             System.out.println("Exception: " + sqle);
             return;
@@ -116,7 +116,7 @@ public class LookInnaBook{
         
 
 
-
+        //Loop
         while(true){
             System.out.println();
             System.out.println();
