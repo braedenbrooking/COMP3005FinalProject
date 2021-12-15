@@ -29,6 +29,7 @@ public class LookInnaBook{
             System.out.println("2 - Remove Books");
             System.out.println("3 - View Publisher Info");
             System.out.println("4 - View Sales Reports");
+            System.out.println("5 - View Orders to Publishers");
             System.out.println("q - Return to Main Menu");
 
             String selection = scan.nextLine();
@@ -40,6 +41,8 @@ public class LookInnaBook{
                 //Function
             }else if(selection.equals("4")){
                 //Function
+            }else if(selection.equals("5")){
+                //Function
             }else if(selection.equals("q")){
                 break;
             }else{
@@ -49,25 +52,90 @@ public class LookInnaBook{
         }
     }
 
+    // Customer Functions
+    public static void searchForBooks(Scanner scan, String username){
+        try(
+            Connection conn = DriverManager.getConnection(
+                "jdbc:postgresql://localhost:5432" + DB_PATH,
+                DB_USER, DB_PASS
+            );
+            Statement stmt = conn.createStatement();
+        ){
+            System.out.println("Connected!");
+            
+            while(true){
+                System.out.println("Book Search: ");
+                System.out.println("Enter the following: (or just enter for *");
+                System.out.println("Book Search: ");
+                System.out.println("Book Search: ");
+
+            }
+
+
+
+
+
+        }catch (Exception sqle){
+            System.out.println("Exception: " + sqle);
+            return;
+        }
+
+    }
+
     public static void customerLoop(Scanner scan){
-        System.out.println("Please enter your username:");
-        String username = scan.nextLine();
+        System.out.println("Connecting to Database...");
+        String username = null;
+        try(
+            Connection conn = DriverManager.getConnection(
+                "jdbc:postgresql://localhost:5432" + DB_PATH,
+                DB_USER, DB_PASS
+            );
+            Statement stmt = conn.createStatement();
+        ){
+            System.out.println("Connected!");
+            while(true){
+                System.out.println("Please enter your username: (or 'back' to return to main menu)");
+                username = scan.nextLine();
+                if(username.equals("back") || username.equals("")) return;
+
+
+                String query = "select count(*) from customer where username='" + username + "';";
+                ResultSet rset = stmt.executeQuery(query);
+                if(rset.next() && rset.getString("count").equals("1")){
+                    System.out.println("Login successful");
+                    break;
+                }else{
+                    System.out.println("Login unsuccessful... Please Try Again");
+                }
+
+            
+        }catch (Exception sqle){
+            System.out.println("Exception: " + sqle);
+            return;
+        }
+        
+
+
+
         while(true){
             System.out.println();
             System.out.println();
             System.out.println("Welcome " + username + "!");
             System.out.println("=== Cutomer Menu ===");
             System.out.println("1 - Search for Books");
-            System.out.println("2 - View Checkout Basket");
-            System.out.println("3 - Track Orders");
+            System.out.println("2 - View Shopping Cart");
+            System.out.println("3 - Checkout");
+            System.out.println("4 - Track Orders");
             System.out.println("q - Return to Main Menu");
 
             String selection = scan.nextLine();
             if(selection.equals("1")){
-                //Function
+                //searchForBooks()
             }else if(selection.equals("2")){
                 //Function
             }else if(selection.equals("3")){
+                //Function
+            }else if(selection.equals("4")){
                 //Function
             }else if(selection.equals("q")){
                 break;
@@ -79,6 +147,7 @@ public class LookInnaBook{
     }
 
     public static void registerCustomer(Scanner scan){ // TODO improve by making it so it checks if username is taken already
+        System.out.println("Connecting to Database...");
         try(
             Connection conn = DriverManager.getConnection(
                 "jdbc:postgresql://localhost:5432" + DB_PATH,
@@ -86,6 +155,7 @@ public class LookInnaBook{
             );
             Statement stmt = conn.createStatement();
         ){
+            System.out.println("Connected!");
             boolean flag = true;
             while(flag){ // Loop until user successfully created
                 try{
@@ -127,8 +197,6 @@ public class LookInnaBook{
         }
 
     }
-
-
 
     public static void main(String[] args){
         Scanner scan = new Scanner(System.in);
