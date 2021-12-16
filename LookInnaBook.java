@@ -56,12 +56,13 @@ public class LookInnaBook{
     //Helper Function
     public static boolean isNumeric(String str){
         try{
-            Integer.parseInt(str);
+            Double.parseDouble(str);
             return true;
         }catch(NumberFormatException e){
             return false;
         }
     }
+
 
     // Customer Functions
     public static void searchForBooks(Scanner scan, String username){
@@ -95,7 +96,15 @@ public class LookInnaBook{
                     }
                 }
 
-                String query = "select title, name, price, pages, genre, ISBN from book natural join wrote natural join author where ";
+                String query = "select title, name, price, pages, genre, ISBN from book natural join wrote natural join author ";
+                for(int i=0; i<selections.length; i++){
+                    if (selections[i] != null){
+                        query += "where ";
+                        break;
+                    }
+                }
+
+                
                 String and = "";
                 for(int i=0; i<selections.length; i++){
                     if(selections[i] == null){
@@ -111,7 +120,6 @@ public class LookInnaBook{
 
                 }
                 query += ";";
-                System.out.println(query); //DEBUG
                 ResultSet rset = stmt.executeQuery(query);
                 System.out.println("=== Results ===");
                 System.out.println("Title                                   \tAuthor             \tPrice\tPages\tGenre           \tISBN");
@@ -131,7 +139,6 @@ public class LookInnaBook{
 
                     System.out.println(title + "\t" + name + "\t" + rset.getString("price") + "\t" + rset.getString("pages") + "\t" + genre + "\t" + rset.getString("ISBN"));
                 }
-
                 System.out.println("Would you like to search again? (y/n)");
                 boolean flag = false;
                 while(true){
@@ -148,16 +155,45 @@ public class LookInnaBook{
                 if(flag) break;
 
             }
-
-
-
-
-
         }catch (Exception sqle){
             System.out.println("Exception: " + sqle);
             return;
         }
+    }
+    public static void listAllBooks(Scanner scan, String username){
+        try(
+            Connection conn = DriverManager.getConnection(
+                "jdbc:postgresql://localhost:5432" + DB_PATH,
+                DB_USER, DB_PASS
+            );
+            Statement stmt = conn.createStatement();
+        ){
+            System.out.println("Connected!");
+            String query = "select title, name, price, pages, genre, ISBN from book natural join wrote natural join author;";
+            ResultSet rset = stmt.executeQuery(query);
 
+            System.out.println("=== Results ===");
+            System.out.println("Title                                   \tAuthor             \tPrice\tPages\tGenre           \tISBN");
+            while(rset.next()){
+                String title = rset.getString("title");
+                while(title.length()<40){
+                    title += " ";
+                }
+                String name = rset.getString("name");
+                while(name.length()<20){
+                    name += " ";
+                }
+                String genre = rset.getString("genre");
+                while(genre.length()<16){
+                    genre += " ";
+                }
+
+                System.out.println(title + "\t" + name + "\t" + rset.getString("price") + "\t" + rset.getString("pages") + "\t" + genre + "\t" + rset.getString("ISBN"));
+            }
+        }catch (Exception sqle){
+            System.out.println("Exception: " + sqle);
+            return;
+        }
     }
 
     public static void customerLoop(Scanner scan){
@@ -209,7 +245,7 @@ public class LookInnaBook{
 
             String selection = scan.nextLine();
             if(selection.equals("1")){
-                //Function
+                listAllBooks(scan,username);
             }else if(selection.equals("2")){
                 searchForBooks(scan, username);
             }else if(selection.equals("3")){
