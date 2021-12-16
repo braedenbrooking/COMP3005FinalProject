@@ -359,9 +359,9 @@ public class LookInnaBook{
                     System.out.println("Username");
                     System.out.println("Name");
                     System.out.println("Address");
+                    System.out.println("Credit Card");
                     System.out.println("Email");
                     System.out.println("Phone Number");
-                    System.out.println("Credit Card");
 
 
                     String[] newUserInfo = new String[6];
@@ -379,7 +379,18 @@ public class LookInnaBook{
                     }
                     query += ");";
                     System.out.println("Registering...");
-                    stmt.executeQuery(query);
+                    stmt.executeUpdate(query);
+
+                    query = "select count(*) from shopping_cart;";
+                    ResultSet rset = stmt.executeQuery(query);
+                    int newCartId = 0;
+                    while(rset.next()){
+                        newCartId = Integer.parseInt(rset.getString("count"));
+                    }
+                    newCartId++;
+
+                    query = "insert into shopping_cart values(" + newCartId + ", '" + newUserInfo[0] + "');";
+                    stmt.executeUpdate(query);
 
                     System.out.println("User Registered!");
                     flag = false;
