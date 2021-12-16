@@ -229,21 +229,15 @@ public class LookInnaBook{
             Statement stmt = conn.createStatement();
         ){
             System.out.println("Connected!");
-
-            String query = "select shopping_cart_id from shopping_cart where customer_username='" + username + "' order by shopping_cart_id;";
-            ResultSet rset = stmt.executeQuery(query);
-            String cartId = null;
-            while(rset.next()){
-                cartId = rset.getString("shopping_cart_id");
-            }
+            String cartId = getCurrentCartId(username);
 
             if(cartId == null){
                 System.out.println("Error No Shopping Cart");
                 return;
             }
 
-            query = "select isbn, quantity from in_cart where shopping_cart_id='" + cartId + "';";
-            rset = stmt.executeQuery(query);
+            String query = "select isbn, quantity from in_cart where shopping_cart_id='" + cartId + "';";
+            ResultSet rset = stmt.executeQuery(query);
 
             while(rset.next()){
                 String curISBN = rset.getString("ISBN");
@@ -270,16 +264,82 @@ public class LookInnaBook{
             }
 
             stmt.executeUpdate(query);
-            
+
+        }catch (Exception sqle){
+            System.out.println("Exception: " + sqle);
+            return;
+        }
+    }
+
+    public static String getCurrentCartId(String username){
+        try(
+            Connection conn = DriverManager.getConnection(
+                "jdbc:postgresql://localhost:5432" + DB_PATH,
+                DB_USER, DB_PASS
+            );
+            Statement stmt = conn.createStatement();
+        ){        
+            String query = "select shopping_cart_id from shopping_cart where customer_username='" + username + "' order by shopping_cart_id;";
+            ResultSet rset = stmt.executeQuery(query);
+            String cartId = null;
+            while(rset.next()){
+                cartId = rset.getString("shopping_cart_id");
+            }
+            return cartId;
+        }catch (Exception sqle){
+            System.out.println("Exception: " + sqle);
+            return null;
+        }
+    }
+
+    public static void viewCart(Scanner scan, String username){
+        try(
+            Connection conn = DriverManager.getConnection(
+                "jdbc:postgresql://localhost:5432" + DB_PATH,
+                DB_USER, DB_PASS
+            );
+            Statement stmt = conn.createStatement();
+        ){
+            System.out.println("Connected!");
+            String cartId = getCurrentCartId(username);
+
+            String query = "select title, price, quantity, ISBN from shopping_cart natural join in_cart natural join book where shopping_cart_id=" + cartId + " order by title;";
+
+            ResultSet rset = stmt.executeQuery(query);
+            ArrayList<String> isbnsInCart = new ArrayList<String>();
+            ArrayList<ArrayList<String>> booksInCart = new ArrayList<ArrayList<String>>();
+            while(rset.next()){
+                ArrayList<String> currentBookInfo = new ArrayList<String>();
+                String title = rset.getString("title");
+                while(title.length()<45){
+                    title += " ";
+                }
+                currentBookInfo.add(title);
+                currentBookInfo.add(rset.getString("price"));
+                currentBookInfo.add(rset.getString("quantity"));
+                isbnsInCart.add(rset.getString("ISBN"));
+                booksInCart.add(currentBookInfo);
+            }
+
+            System.out.println("=== " + username + "'s Cart ===");
+            System.out.println("x: Title                                        \tPrice\tQuantity");
+            for(int i=0; i<booksInCart.size(); i++){
+                System.out.print(i + ": ");
+                for(int j=0; j<booksInCart.get(i).size(); j++){
+                    System.out.print(booksInCart.get(i).get(j) + "\t");
+                }
+                System.out.println();
+            }
+
+
+
 
 
         }catch (Exception sqle){
             System.out.println("Exception: " + sqle);
             return;
         }
-
     }
-
 
     public static void customerLoop(Scanner scan){
         //Login
@@ -330,7 +390,7 @@ public class LookInnaBook{
             if(selection.equals("1")){
                 searchForBooks(scan, username);
             }else if(selection.equals("2")){
-                //Function
+                viewCart(scan, username);
             }else if(selection.equals("3")){
                 //Function
             }else if(selection.equals("q")){
@@ -339,6 +399,33 @@ public class LookInnaBook{
                 System.out.println("Invalid Option");
                 System.out.println("Please select only 1-4 or q");
             }
+        }
+    }
+
+    public static boolean createCart(String username){
+        try(
+            Connection conn = DriverManager.getConnection(
+                "jdbc:postgresql://localhost:5432" + DB_PATH,
+                DB_USER, DB_PASS
+            );
+            Statement stmt = conn.createStatement();
+        ){
+            System.out.println("Connected!");
+            String query = "select count(*) from shopping_cart;";
+            ResultSet rset = stmt.executeQuery(query);
+            int newCartId = 0;
+            while(rset.next()){
+                newCartId = Integer.parseInt(rset.getString("count"));
+            }
+            newCartId++;
+
+            query = "insert into shopping_cart values(" + newCartId + ", '" + username + "');";
+            stmt.executeUpdate(query);
+            return true;
+
+        }catch (Exception sqle){
+            System.out.println("Exception: " + sqle);
+            return false;
         }
     }
 
@@ -381,24 +468,14 @@ public class LookInnaBook{
                     System.out.println("Registering...");
                     stmt.executeUpdate(query);
 
-                    query = "select count(*) from shopping_cart;";
-                    ResultSet rset = stmt.executeQuery(query);
-                    int newCartId = 0;
-                    while(rset.next()){
-                        newCartId = Integer.parseInt(rset.getString("count"));
-                    }
-                    newCartId++;
+                    flag = !createCart(newUserInfo[0]);
 
-                    query = "insert into shopping_cart values(" + newCartId + ", '" + newUserInfo[0] + "');";
-                    stmt.executeUpdate(query);
-
-                    System.out.println("User Registered!");
-                    flag = false;
                 }catch (Exception e){
                     System.out.println("Exception: " + e);
                     System.out.println("Please try again");
                 }
             }
+            System.out.println("User Registered!");
         }catch (Exception sqle){
             System.out.println("Exception: " + sqle);
         }
