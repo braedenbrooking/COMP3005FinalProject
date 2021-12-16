@@ -92,6 +92,18 @@ insert into wrote values(10, 9780143128540);
 insert into wrote values(10, 9780143128571);
 insert into wrote values(10, 9780143128564);
 
+insert into shopping_cart values(1, 'jeff77');
+insert into shopping_cart values(2, 'tim12');
+insert into shopping_cart values(3, 'yolanda45');
+
+insert into in_cart values(1, 9780007458424, 4);
+insert into in_cart values(1, 9780771008795, 2);
+
+insert into in_cart values(2, 9781538713839, 1);
+insert into in_cart values(2, 9780143128540, 8);
+
+
+
 
 
 

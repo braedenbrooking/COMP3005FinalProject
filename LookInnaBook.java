@@ -11,6 +11,7 @@ package COMP3005FinalProject;
 import java.util.Scanner;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Collections;
 
 
 public class LookInnaBook{
@@ -121,15 +122,15 @@ public class LookInnaBook{
                 }
                 query += ";";
                 ResultSet rset = stmt.executeQuery(query);
-                System.out.println("=== Results ===");
-                System.out.println("Title                                   \tAuthor             \tPrice\tPages\tGenre           \tISBN");
+                ArrayList<ArrayList<String>> bookList = new ArrayList<ArrayList<String>>();
                 while(rset.next()){
+                    ArrayList<String> bookinfo = new ArrayList<String>();
                     String title = rset.getString("title");
-                    while(title.length()<40){
+                    while(title.length()<45){
                         title += " ";
                     }
                     String name = rset.getString("name");
-                    while(name.length()<20){
+                    while(name.length()<35){
                         name += " ";
                     }
                     String genre = rset.getString("genre");
@@ -137,8 +138,66 @@ public class LookInnaBook{
                         genre += " ";
                     }
 
-                    System.out.println(title + "\t" + name + "\t" + rset.getString("price") + "\t" + rset.getString("pages") + "\t" + genre + "\t" + rset.getString("ISBN"));
+                    String isbn = rset.getString("ISBN");
+
+                    bookinfo.add(title);
+                    bookinfo.add(name);
+                    bookinfo.add(rset.getString("price"));
+                    bookinfo.add(rset.getString("pages"));
+                    bookinfo.add(genre);
+                    bookinfo.add(isbn);
+
+
+                    boolean bookAlreadyFound = false;
+                    for(int i=0; i<bookList.size(); i++){
+                        if(bookList.get(i).contains(isbn)){
+                            bookAlreadyFound = true;
+                            String replacement = bookList.get(i).get(1).stripTrailing() + " & " + name.stripTrailing();
+                            while(replacement.length()<35){
+                                replacement += " ";
+                            }
+                            bookList.get(i).set(1, replacement);
+                        }
+                    }
+                    if(!bookAlreadyFound){
+                        bookList.add(bookinfo);
+                    }
                 }
+                System.out.println("=== Results ===");
+                System.out.println("x: Title                                        \tAuthor(s)                          \tPrice\tPages\tGenre           \tISBN");
+                for(int i=0; i<bookList.size(); i++){
+                    System.out.print(i + ": ");
+                    for(int j=0; j<bookList.get(i).size(); j++){
+                        System.out.print(bookList.get(i).get(j) + "\t");
+                    }
+                    System.out.println();
+                }
+                System.out.println("Enter the numbers you'd like to add to your cart: ('end' when done)");
+                ArrayList<String> addToCartItems = new ArrayList<String>();
+                while(true){
+                    System.out.print("Item: ");
+                    String item = scan.nextLine();
+                    if(item.equals("end")) break;
+
+                    if(!isNumeric(item) || Integer.parseInt(item) >= bookList.size()){
+                        System.out.println("Just the index number");
+                        continue;
+                    }
+                    String quantity = "";
+                    while(true){
+                        System.out.print("Quantity: ");
+                        quantity = scan.nextLine();
+                        if(isNumeric(quantity)) break;
+                        System.out.println("Must be a number");
+                    }
+                        
+                    for(int i=0; i<Integer.parseInt(quantity); i++)
+                        addToCartItems.add(bookList.get(Integer.parseInt(item)).get(bookList.get(Integer.parseInt(item)).size()-1));
+                }
+
+                addToCart(username, addToCartItems);
+
+
                 System.out.println("Would you like to search again? (y/n)");
                 boolean flag = false;
                 while(true){
@@ -160,7 +219,8 @@ public class LookInnaBook{
             return;
         }
     }
-    public static void listAllBooks(Scanner scan, String username){
+
+    public static void addToCart(String username, ArrayList<String> isbns){
         try(
             Connection conn = DriverManager.getConnection(
                 "jdbc:postgresql://localhost:5432" + DB_PATH,
@@ -169,32 +229,57 @@ public class LookInnaBook{
             Statement stmt = conn.createStatement();
         ){
             System.out.println("Connected!");
-            String query = "select title, name, price, pages, genre, ISBN from book natural join wrote natural join author;";
+
+            String query = "select shopping_cart_id from shopping_cart where customer_username='" + username + "' order by shopping_cart_id;";
             ResultSet rset = stmt.executeQuery(query);
-
-            System.out.println("=== Results ===");
-            System.out.println("Title                                   \tAuthor             \tPrice\tPages\tGenre           \tISBN");
+            String cartId = null;
             while(rset.next()){
-                String title = rset.getString("title");
-                while(title.length()<40){
-                    title += " ";
-                }
-                String name = rset.getString("name");
-                while(name.length()<20){
-                    name += " ";
-                }
-                String genre = rset.getString("genre");
-                while(genre.length()<16){
-                    genre += " ";
-                }
-
-                System.out.println(title + "\t" + name + "\t" + rset.getString("price") + "\t" + rset.getString("pages") + "\t" + genre + "\t" + rset.getString("ISBN"));
+                cartId = rset.getString("shopping_cart_id");
             }
+
+            if(cartId == null){
+                System.out.println("Error No Shopping Cart");
+                return;
+            }
+
+            query = "select isbn, quantity from in_cart where shopping_cart_id='" + cartId + "';";
+            rset = stmt.executeQuery(query);
+
+            while(rset.next()){
+                String curISBN = rset.getString("ISBN");
+                for(int i=0; i<Integer.parseInt(rset.getString("quantity")); i++){
+                    isbns.add(curISBN);
+                }
+            }
+            query = "delete from in_cart where shopping_cart_id=" + cartId + ";";
+            stmt.executeUpdate(query);
+            Collections.sort(isbns);
+            String prev = "";
+            query = "";
+            for(int i=0; i<isbns.size(); i++){
+                if(isbns.get(i).equals(prev)){
+                    continue;
+                }
+                int quant = 0;
+                for(int j=i; j<isbns.size(); j++){
+                    if(isbns.get(i).equals(isbns.get(j))) quant++;
+                }
+                
+                query += "insert into in_cart values(" + cartId + ", " + isbns.get(i) + ", " + quant + ");";
+                prev = isbns.get(i);
+            }
+
+            stmt.executeUpdate(query);
+            
+
+
         }catch (Exception sqle){
             System.out.println("Exception: " + sqle);
             return;
         }
+
     }
+
 
     public static void customerLoop(Scanner scan){
         //Login
@@ -236,29 +321,23 @@ public class LookInnaBook{
             System.out.println();
             System.out.println("Welcome " + username + "!");
             System.out.println("=== Cutomer Menu ===");
-            System.out.println("1 - See All Books");
-            System.out.println("2 - Search for Books");
-            System.out.println("3 - View Shopping Cart");
-            System.out.println("4 - Checkout");
-            System.out.println("5 - Track Orders");
+            System.out.println("1 - Search for Books");
+            System.out.println("2 - View Shopping Cart");
+            System.out.println("3 - Track Orders");
             System.out.println("q - Return to Main Menu");
 
             String selection = scan.nextLine();
             if(selection.equals("1")){
-                listAllBooks(scan,username);
-            }else if(selection.equals("2")){
                 searchForBooks(scan, username);
+            }else if(selection.equals("2")){
+                //Function
             }else if(selection.equals("3")){
-                //Function
-            }else if(selection.equals("4")){
-                //Function
-            }else if(selection.equals("5")){
                 //Function
             }else if(selection.equals("q")){
                 break;
             }else{
                 System.out.println("Invalid Option");
-                System.out.println("Please select only 1-3 or q");
+                System.out.println("Please select only 1-4 or q");
             }
         }
     }
