@@ -194,8 +194,8 @@ public class LookInnaBook{
                     for(int i=0; i<Integer.parseInt(quantity); i++)
                         addToCartItems.add(bookList.get(Integer.parseInt(item)).get(bookList.get(Integer.parseInt(item)).size()-1));
                 }
-
-                addToCart(username, addToCartItems);
+                String cartId = getCurrentCartId(username);
+                addToCart(cartId, addToCartItems);
 
 
                 System.out.println("Would you like to search again? (y/n)");
@@ -220,7 +220,7 @@ public class LookInnaBook{
         }
     }
 
-    public static void addToCart(String username, ArrayList<String> isbns){
+    public static void addToCart(String cartId, ArrayList<String> isbns){
         try(
             Connection conn = DriverManager.getConnection(
                 "jdbc:postgresql://localhost:5432" + DB_PATH,
@@ -229,7 +229,6 @@ public class LookInnaBook{
             Statement stmt = conn.createStatement();
         ){
             System.out.println("Connected!");
-            String cartId = getCurrentCartId(username);
 
             if(cartId == null){
                 System.out.println("Error No Shopping Cart");
@@ -302,37 +301,130 @@ public class LookInnaBook{
         ){
             System.out.println("Connected!");
             String cartId = getCurrentCartId(username);
+            
+            while(true){
+                String query = "select title, price, quantity, ISBN from shopping_cart natural join in_cart natural join book where shopping_cart_id=" + cartId + " order by title;";
 
-            String query = "select title, price, quantity, ISBN from shopping_cart natural join in_cart natural join book where shopping_cart_id=" + cartId + " order by title;";
+                ResultSet rset = stmt.executeQuery(query);
+                ArrayList<String> isbnsInCart = new ArrayList<String>();
+                ArrayList<ArrayList<String>> booksInCart = new ArrayList<ArrayList<String>>();
+                while(rset.next()){
+                    ArrayList<String> currentBookInfo = new ArrayList<String>();
+                    String title = rset.getString("title");
+                    while(title.length()<45){
+                        title += " ";
+                    }
+                    currentBookInfo.add(title);
+                    currentBookInfo.add(rset.getString("price"));
+                    currentBookInfo.add(rset.getString("quantity"));
+                    isbnsInCart.add(rset.getString("ISBN"));
+                    booksInCart.add(currentBookInfo);
+                }
 
+                if(!(booksInCart.size()>0)){
+                    System.out.println("Your cart is empty!");
+                    return;
+                }
+
+                System.out.println("=== " + username + "'s Cart ===");
+                System.out.println("x: Title                                        \tPrice\tQuantity");
+                for(int i=0; i<booksInCart.size(); i++){
+                    System.out.print(i + ": ");
+                    for(int j=0; j<booksInCart.get(i).size(); j++){
+                        System.out.print(booksInCart.get(i).get(j) + "\t");
+                    }
+                    System.out.println();
+                }
+
+                System.out.println("Would you like to remove anything? (y/n)");
+                boolean wantToRemove = false;
+                while(booksInCart.size()>0){
+                    String selection = scan.nextLine();
+                    if(selection.equals("y")){
+                        wantToRemove = true;
+                        break;
+                    }else if(selection.equals("n")){
+                        break;
+                    }else{
+                        System.out.println("Just enter y or n");
+                    }
+                }
+                if(wantToRemove) System.out.println("Enter the index you want to remove: ('end' to stop)");
+                ArrayList<String> removeIsbns = new ArrayList<String>();
+                while(wantToRemove){
+                    System.out.print("Item: ");
+                    String item = scan.nextLine();
+
+                    if(item.equals("end")) break;
+
+                    if(!isNumeric(item) || Integer.parseInt(item)>=isbnsInCart.size()){
+                        System.out.println("Just the index");
+                        continue;
+                    }
+                    
+                    System.out.print("Quantity: ");
+                    String quant = scan.nextLine();
+                    if(quant.equals("end")) break;
+                    if(!isNumeric(quant)){
+                        System.out.println("Just the number you want to remove");
+                        continue;
+                    }
+                    
+
+                    for(int i=0; i<Integer.parseInt(quant); i++){
+                        removeIsbns.add(isbnsInCart.get(Integer.parseInt(item)));
+                    }
+
+                }
+
+                if(removeIsbns.size()>0) removeFromCart(scan, cartId, removeIsbns);
+                else break;
+            }
+
+
+
+
+
+
+
+        }catch (Exception sqle){
+            System.out.println("Exception: " + sqle);
+            return;
+        }
+    }
+
+    public static void removeFromCart(Scanner scan, String cartId, ArrayList<String> removeIsbns){
+        try(
+            Connection conn = DriverManager.getConnection(
+                "jdbc:postgresql://localhost:5432" + DB_PATH,
+                DB_USER, DB_PASS
+            );
+            Statement stmt = conn.createStatement();
+        ){
+            String query = "select ISBN, quantity from in_cart where shopping_cart_id=" + cartId + ";";
             ResultSet rset = stmt.executeQuery(query);
             ArrayList<String> isbnsInCart = new ArrayList<String>();
-            ArrayList<ArrayList<String>> booksInCart = new ArrayList<ArrayList<String>>();
             while(rset.next()){
-                ArrayList<String> currentBookInfo = new ArrayList<String>();
-                String title = rset.getString("title");
-                while(title.length()<45){
-                    title += " ";
+                int currentQuantity = Integer.parseInt(rset.getString("quantity"));
+                String currentIsbn = rset.getString("ISBN");
+                for(int i=0; i<currentQuantity; i++){
+                    isbnsInCart.add(currentIsbn);
                 }
-                currentBookInfo.add(title);
-                currentBookInfo.add(rset.getString("price"));
-                currentBookInfo.add(rset.getString("quantity"));
-                isbnsInCart.add(rset.getString("ISBN"));
-                booksInCart.add(currentBookInfo);
             }
 
-            System.out.println("=== " + username + "'s Cart ===");
-            System.out.println("x: Title                                        \tPrice\tQuantity");
-            for(int i=0; i<booksInCart.size(); i++){
-                System.out.print(i + ": ");
-                for(int j=0; j<booksInCart.get(i).size(); j++){
-                    System.out.print(booksInCart.get(i).get(j) + "\t");
+            for(int i=0; i<removeIsbns.size(); i++){
+                for(int j=0; j<isbnsInCart.size(); j++){
+                    if(isbnsInCart.get(j).equals(removeIsbns.get(i))){
+                        isbnsInCart.remove(j);
+                        break;
+                    }
                 }
-                System.out.println();
+                
             }
+            query = "delete from in_cart where shopping_cart_id=" + cartId + ";";
+            stmt.executeUpdate(query);
 
-
-
+            if(isbnsInCart.size()>0) addToCart(cartId, isbnsInCart);
 
 
         }catch (Exception sqle){
