@@ -52,6 +52,17 @@ public class LookInnaBook{
         }
     }
 
+
+    //Helper Function
+    public static boolean isNumeric(String str){
+        try{
+            Integer.parseInt(str);
+            return true;
+        }catch(NumberFormatException e){
+            return false;
+        }
+    }
+
     // Customer Functions
     public static void searchForBooks(Scanner scan, String username){
         try(
@@ -65,9 +76,76 @@ public class LookInnaBook{
             
             while(true){
                 System.out.println("Book Search: ");
-                System.out.println("Enter the following: (or just enter for *");
-                System.out.println("Book Search: ");
-                System.out.println("Book Search: ");
+                System.out.println("Enter the following: (or just enter if not applicable)");
+
+
+                String[] prompts = {"Title", "Author", "Publisher", "Genre", "More than __ Pages", "Less than __ Pages", "More than $__", "Less than $__"};
+                String[] selections = new String[8];
+                String[] columns = {"title", "name", "publisher", "genre", "pages", "pages", "price", "price"};
+                for(int i=0; i<selections.length; i++){
+                    System.out.print(prompts[i] + ": ");
+                    String currentSelection = scan.nextLine();
+                    if(currentSelection.equals("")){
+                        selections[i] = null;
+                    }else if(i>=4 && !isNumeric(currentSelection)){
+                        System.out.println("Must be a number");
+                        i--;
+                    }else{
+                        selections[i] = currentSelection;
+                    }
+                }
+
+                String query = "select title, name, price, pages, genre, ISBN from book natural join wrote natural join author where ";
+                String and = "";
+                for(int i=0; i<selections.length; i++){
+                    if(selections[i] == null){
+                        continue;
+                    }else if(i<4){
+                        query += and + columns[i] + "='" + selections[i] + "' "; 
+                    }else if(i%2==0){
+                        query += and + "(" + columns[i] + ">" + selections[i] + ") ";
+                    }else{
+                        query += and + "(" + columns[i] + "<" + selections[i] + ") ";
+                    }
+                    and = "and ";
+
+                }
+                query += ";";
+                System.out.println(query); //DEBUG
+                ResultSet rset = stmt.executeQuery(query);
+                System.out.println("=== Results ===");
+                System.out.println("Title                                   \tAuthor             \tPrice\tPages\tGenre           \tISBN");
+                while(rset.next()){
+                    String title = rset.getString("title");
+                    while(title.length()<40){
+                        title += " ";
+                    }
+                    String name = rset.getString("name");
+                    while(name.length()<20){
+                        name += " ";
+                    }
+                    String genre = rset.getString("genre");
+                    while(genre.length()<16){
+                        genre += " ";
+                    }
+
+                    System.out.println(title + "\t" + name + "\t" + rset.getString("price") + "\t" + rset.getString("pages") + "\t" + genre + "\t" + rset.getString("ISBN"));
+                }
+
+                System.out.println("Would you like to search again? (y/n)");
+                boolean flag = false;
+                while(true){
+                    String choice = scan.nextLine();
+                    if(choice.equals("n")){
+                        flag = true;
+                        break;
+                    }else if(choice.equals("y")){
+                        break;
+                    }else{
+                        System.out.println("Only answer with y or n");
+                    }
+                }
+                if(flag) break;
 
             }
 
@@ -100,7 +178,7 @@ public class LookInnaBook{
                 if(username.equals("back") || username.equals("")) return;
 
 
-                String query = "select count(*) from customer where username='" + username + "';";
+                String query = "select count(*) from customer where customer_username='" + username + "';";
                 ResultSet rset = stmt.executeQuery(query);
                 if(rset.next() && rset.getString("count").equals("1")){
                     System.out.println("Login successful");
@@ -122,20 +200,23 @@ public class LookInnaBook{
             System.out.println();
             System.out.println("Welcome " + username + "!");
             System.out.println("=== Cutomer Menu ===");
-            System.out.println("1 - Search for Books");
-            System.out.println("2 - View Shopping Cart");
-            System.out.println("3 - Checkout");
-            System.out.println("4 - Track Orders");
+            System.out.println("1 - See All Books");
+            System.out.println("2 - Search for Books");
+            System.out.println("3 - View Shopping Cart");
+            System.out.println("4 - Checkout");
+            System.out.println("5 - Track Orders");
             System.out.println("q - Return to Main Menu");
 
             String selection = scan.nextLine();
             if(selection.equals("1")){
-                //searchForBooks()
-            }else if(selection.equals("2")){
                 //Function
+            }else if(selection.equals("2")){
+                searchForBooks(scan, username);
             }else if(selection.equals("3")){
                 //Function
             }else if(selection.equals("4")){
+                //Function
+            }else if(selection.equals("5")){
                 //Function
             }else if(selection.equals("q")){
                 break;

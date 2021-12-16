@@ -9,7 +9,7 @@ create table customer
 	);
 
 create table author
-	(author_id		varchar(50),
+	(author_id		numeric(4,0),
 	 name 			varchar(50) not null,
 	 primary key (author_id)
 	);
@@ -24,11 +24,12 @@ create table publisher
 	);
 
 create table book
-	(ISBN			varchar(50), 
+	(ISBN			numeric(13,0), 
 	 title			varchar(50) not null, 
 	 price			numeric(12,2) check (price > 0),
      pages          numeric(5,0) check (pages > 0),
      stock		    numeric(5,0),
+	 genre			varchar(50),
 	 publisher_name varchar(50),
 	 primary key (ISBN),
 	 foreign key (publisher_name) references publisher
@@ -36,8 +37,8 @@ create table book
 	);
 
 create table wrote
-	(author_id		varchar(50),
-	 ISBN			varchar(50),
+	(author_id		numeric(4,0),
+	 ISBN			numeric(13,0),
 	 primary key (author_id, ISBN),
 	 foreign key (author_id) references author
 	 	on delete cascade,
@@ -55,7 +56,7 @@ create table shopping_cart
 
 create table in_cart
 	(shopping_cart_id	numeric(12,0),
-	 ISBN			varchar(50),
+	 ISBN			numeric(13,0),
 	 quantity		numeric(4,0),
 	 primary key (shopping_cart_id,ISBN),
 	 foreign key (shopping_cart_id) references shopping_cart
@@ -83,7 +84,7 @@ create table purchase
 create table stock_refill_order
 	(date_time 			varchar(19),
 	 publisher_name		varchar(50),
-	 ISBN			varchar(50),
+	 ISBN			numeric(13,0),
 	 primary key (date_time, publisher_name, ISBN),
 	 foreign key (publisher_name) references publisher
 	 	on delete cascade,
