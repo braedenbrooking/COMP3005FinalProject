@@ -12,13 +12,15 @@ import java.util.Scanner;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Collections;
-
+import java.text.DecimalFormat;
+import java.math.RoundingMode;
 
 public class LookInnaBook{
 
     public static final String DB_USER = "postgres";
     public static final String DB_PASS = "brooking";
     public static final String DB_PATH = "/project";
+    public static final DecimalFormat df = new DecimalFormat("0.00");
 
     public static void ownerLoop(Scanner scan){
         while(true){
@@ -97,7 +99,7 @@ public class LookInnaBook{
                     }
                 }
 
-                String query = "select title, name, price, pages, genre, ISBN from book natural join wrote natural join author ";
+                String query = "select title, name, price, pages, genre, stock, ISBN from book natural join wrote natural join author ";
                 for(int i=0; i<selections.length; i++){
                     if (selections[i] != null){
                         query += "where ";
@@ -120,7 +122,7 @@ public class LookInnaBook{
                     and = "and ";
 
                 }
-                query += ";";
+                query += " order by name;";
                 ResultSet rset = stmt.executeQuery(query);
                 ArrayList<ArrayList<String>> bookList = new ArrayList<ArrayList<String>>();
                 while(rset.next()){
@@ -137,7 +139,7 @@ public class LookInnaBook{
                     while(genre.length()<16){
                         genre += " ";
                     }
-
+                    String stock = rset.getString("stock");
                     String isbn = rset.getString("ISBN");
 
                     bookinfo.add(title);
@@ -145,6 +147,7 @@ public class LookInnaBook{
                     bookinfo.add(rset.getString("price"));
                     bookinfo.add(rset.getString("pages"));
                     bookinfo.add(genre);
+                    bookinfo.add(stock);
                     bookinfo.add(isbn);
 
 
@@ -164,7 +167,7 @@ public class LookInnaBook{
                     }
                 }
                 System.out.println("=== Results ===");
-                System.out.println("x: Title                                        \tAuthor(s)                          \tPrice\tPages\tGenre           \tISBN");
+                System.out.println("x: Title                                        \tAuthor(s)                          \tPrice\tPages\tGenre                   InStock\tISBN");
                 for(int i=0; i<bookList.size(); i++){
                     System.out.print(i + ": ");
                     for(int j=0; j<bookList.get(i).size(); j++){
@@ -190,9 +193,16 @@ public class LookInnaBook{
                         if(isNumeric(quantity)) break;
                         System.out.println("Must be a number");
                     }
+                    int quantityAsInt = Integer.parseInt(quantity);
+                    int itemAsInt = Integer.parseInt(item);
+                    int maximumQuantity = Math.min(quantityAsInt, Integer.parseInt(bookList.get(itemAsInt).get(5)));
                         
-                    for(int i=0; i<Integer.parseInt(quantity); i++)
-                        addToCartItems.add(bookList.get(Integer.parseInt(item)).get(bookList.get(Integer.parseInt(item)).size()-1));
+                    for(int i=0; i<maximumQuantity; i++)
+                        addToCartItems.add(bookList.get(itemAsInt).get(bookList.get(itemAsInt).size()-1));
+
+                    query = "update book set stock=" + (Integer.parseInt(bookList.get(itemAsInt).get(5))-maximumQuantity) + " where ISBN='" +  bookList.get(itemAsInt).get(bookList.get(itemAsInt).size()-1) + "';";
+                    stmt.executeUpdate(query);
+                    
                 }
                 String cartId = getCurrentCartId(username);
                 addToCart(cartId, addToCartItems);
@@ -240,6 +250,7 @@ public class LookInnaBook{
 
             while(rset.next()){
                 String curISBN = rset.getString("ISBN");
+                
                 for(int i=0; i<Integer.parseInt(rset.getString("quantity")); i++){
                     isbns.add(curISBN);
                 }
@@ -301,16 +312,22 @@ public class LookInnaBook{
         ){
             System.out.println("Connected!");
             String cartId = getCurrentCartId(username);
-            
+            double total = 0.0;
             while(true){
                 String query = "select title, price, quantity, ISBN from shopping_cart natural join in_cart natural join book where shopping_cart_id=" + cartId + " order by title;";
 
                 ResultSet rset = stmt.executeQuery(query);
                 ArrayList<String> isbnsInCart = new ArrayList<String>();
                 ArrayList<ArrayList<String>> booksInCart = new ArrayList<ArrayList<String>>();
+                double subtotal = 0.0;
                 while(rset.next()){
                     ArrayList<String> currentBookInfo = new ArrayList<String>();
                     String title = rset.getString("title");
+                    String price = rset.getString("price");
+                    String quantity = rset.getString("quantity");
+
+                    subtotal += (Double.parseDouble(price) * Integer.parseInt(quantity));
+
                     while(title.length()<45){
                         title += " ";
                     }
@@ -335,6 +352,11 @@ public class LookInnaBook{
                     }
                     System.out.println();
                 }
+                System.out.println("Subtotal: $" + df.format(subtotal));
+                double tax = subtotal * 0.13;
+                System.out.println("Tax: $" + df.format(tax));
+                total = tax + subtotal;
+                System.out.println("Total: $" + df.format(total)); 
 
                 System.out.println("Would you like to remove anything? (y/n)");
                 boolean wantToRemove = false;
@@ -381,12 +403,34 @@ public class LookInnaBook{
                 else break;
             }
 
+            System.out.println("Are you ready to checkout? (y/n)");
+            while(true){
+                String selection = scan.nextLine();
+                if(selection.equals("y")){
+                    checkout(scan, cartId, username, total);
+                    break;
+                }else if(selection.equals("n")){
+                    break;
+                }else{
+                    System.out.println("Just enter y or n");
+                }
+            }
 
+        }catch (Exception sqle){
+            System.out.println("Exception: " + sqle);
+            return;
+        }
+    }
 
-
-
-
-
+    public static void checkout(Scanner scan, String cartId, String username, double total){
+        try(
+            Connection conn = DriverManager.getConnection(
+                "jdbc:postgresql://localhost:5432" + DB_PATH,
+                DB_USER, DB_PASS
+            );
+            Statement stmt = conn.createStatement();
+        ){
+            String query;
         }catch (Exception sqle){
             System.out.println("Exception: " + sqle);
             return;
@@ -411,10 +455,13 @@ public class LookInnaBook{
                     isbnsInCart.add(currentIsbn);
                 }
             }
-
+            
             for(int i=0; i<removeIsbns.size(); i++){
                 for(int j=0; j<isbnsInCart.size(); j++){
                     if(isbnsInCart.get(j).equals(removeIsbns.get(i))){
+                        query = "update book set stock=stock+1 where ISBN=" + isbnsInCart.get(j) + ";";
+                        stmt.executeUpdate(query);
+
                         isbnsInCart.remove(j);
                         break;
                     }
