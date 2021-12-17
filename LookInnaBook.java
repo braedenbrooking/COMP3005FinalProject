@@ -14,12 +14,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.text.DecimalFormat;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 
 public class LookInnaBook{
 
     public static final String DB_USER = "postgres";
     public static final String DB_PASS = "brooking";
     public static final String DB_PATH = "/project";
+    public static final String DB_HOST = "jdbc:postgresql://localhost:5432";
     public static final DecimalFormat df = new DecimalFormat("0.00");
 
     public static void ownerLoop(Scanner scan){
@@ -71,7 +73,7 @@ public class LookInnaBook{
     public static void searchForBooks(Scanner scan, String username){
         try(
             Connection conn = DriverManager.getConnection(
-                "jdbc:postgresql://localhost:5432" + DB_PATH,
+                DB_HOST + DB_PATH,
                 DB_USER, DB_PASS
             );
             Statement stmt = conn.createStatement();
@@ -122,7 +124,7 @@ public class LookInnaBook{
                     and = "and ";
 
                 }
-                query += " order by name;";
+                query += " order by name, title;";
                 ResultSet rset = stmt.executeQuery(query);
                 ArrayList<ArrayList<String>> bookList = new ArrayList<ArrayList<String>>();
                 while(rset.next()){
@@ -233,7 +235,7 @@ public class LookInnaBook{
     public static void addToCart(String cartId, ArrayList<String> isbns){
         try(
             Connection conn = DriverManager.getConnection(
-                "jdbc:postgresql://localhost:5432" + DB_PATH,
+                DB_HOST + DB_PATH,
                 DB_USER, DB_PASS
             );
             Statement stmt = conn.createStatement();
@@ -284,7 +286,7 @@ public class LookInnaBook{
     public static String getCurrentCartId(String username){
         try(
             Connection conn = DriverManager.getConnection(
-                "jdbc:postgresql://localhost:5432" + DB_PATH,
+                DB_HOST + DB_PATH,
                 DB_USER, DB_PASS
             );
             Statement stmt = conn.createStatement();
@@ -305,7 +307,7 @@ public class LookInnaBook{
     public static void viewCart(Scanner scan, String username){
         try(
             Connection conn = DriverManager.getConnection(
-                "jdbc:postgresql://localhost:5432" + DB_PATH,
+                DB_HOST + DB_PATH,
                 DB_USER, DB_PASS
             );
             Statement stmt = conn.createStatement();
@@ -313,12 +315,12 @@ public class LookInnaBook{
             System.out.println("Connected!");
             String cartId = getCurrentCartId(username);
             double total = 0.0;
+            ArrayList<String> isbnsInCart = new ArrayList<String>();
+            ArrayList<ArrayList<String>> booksInCart = new ArrayList<ArrayList<String>>();
             while(true){
                 String query = "select title, price, quantity, ISBN from shopping_cart natural join in_cart natural join book where shopping_cart_id=" + cartId + " order by title;";
 
                 ResultSet rset = stmt.executeQuery(query);
-                ArrayList<String> isbnsInCart = new ArrayList<String>();
-                ArrayList<ArrayList<String>> booksInCart = new ArrayList<ArrayList<String>>();
                 double subtotal = 0.0;
                 while(rset.next()){
                     ArrayList<String> currentBookInfo = new ArrayList<String>();
@@ -404,15 +406,22 @@ public class LookInnaBook{
             }
 
             System.out.println("Are you ready to checkout? (y/n)");
+            boolean successfulPurchase = false;
             while(true){
                 String selection = scan.nextLine();
                 if(selection.equals("y")){
-                    checkout(scan, cartId, username, total);
+                    successfulPurchase = checkout(scan, cartId, username, total);
                     break;
                 }else if(selection.equals("n")){
                     break;
                 }else{
                     System.out.println("Just enter y or n");
+                }
+            }
+
+            if(successfulPurchase){
+                for(int i=0; i<isbnsInCart.size(); i++){
+                    checkStock(isbnsInCart.get(i));
                 }
             }
 
@@ -422,25 +431,153 @@ public class LookInnaBook{
         }
     }
 
-    public static void checkout(Scanner scan, String cartId, String username, double total){
+    public static void checkStock(String isbn){
         try(
             Connection conn = DriverManager.getConnection(
-                "jdbc:postgresql://localhost:5432" + DB_PATH,
+                DB_HOST + DB_PATH,
                 DB_USER, DB_PASS
             );
             Statement stmt = conn.createStatement();
         ){
-            String query;
+            String query = "select stock, publisher_name from book where ISBN=" + isbn + ";";
+            ResultSet rset = stmt.executeQuery(query);
+            int stock = 0;
+            String publisher = "";
+            while(rset.next()){
+                stock = Integer.parseInt(rset.getString("stock"));
+                publisher = rset.getString("publisher_name");
+            }
+            if(stock < 10){
+                String dateTime = LocalDateTime.now().toString();
+                query = "insert into stock_refill_order values('" + dateTime + "', '" + publisher + "', " + isbn + ");";
+                stmt.executeUpdate(query);
+                query = "update book set stock=stock+" + 10 + " where ISBN=" + isbn + ";";
+                stmt.executeUpdate(query);
+            }
         }catch (Exception sqle){
             System.out.println("Exception: " + sqle);
             return;
         }
     }
 
+    public static boolean checkout(Scanner scan, String cartId, String username, double total){
+        try(
+            Connection conn = DriverManager.getConnection(
+                DB_HOST + DB_PATH,
+                DB_USER, DB_PASS
+            );
+            Statement stmt = conn.createStatement();
+        ){
+            String query;
+            
+            System.out.println("Would you like to use the credit card and billing information from your profile? (y/n)");
+            boolean useProfileCardAndBilling = false;
+            while(true){
+                String selection = scan.nextLine();
+                if(selection.equals("y")){
+                    useProfileCardAndBilling = true;
+                    break;
+                }else if(selection.equals("n")){
+                    break;
+                }else{
+                    System.out.println("Just answer y or n");
+                }
+            }
+
+            System.out.println("Would you like to use the shipping address from your profile? (y/n)");
+            boolean useProfileShipping = false;
+            while(true){
+                String selection = scan.nextLine();
+                if(selection.equals("y")){
+                    useProfileShipping = true;
+                    break;
+                }else if(selection.equals("n")){
+                    break;
+                }else{
+                    System.out.println("Just answer y or n");
+                }
+            }
+
+            String shipping = "";
+            String billing = "";
+            String creditCard = "";
+
+            if(!useProfileCardAndBilling){
+                System.out.print("Credit Card:");
+                while(true){
+                    creditCard = scan.nextLine();
+                    if(!isNumeric(creditCard)){
+                        System.out.println("Error: Not numeric! Please try again!");
+                        continue;
+                    }
+                    break;
+                }
+                System.out.print("Billing Address: ");
+                while(true){
+                    billing = scan.nextLine();
+                    if(billing == null || billing.equals("")){
+                        System.out.println("Error: Please try again!");
+                        continue;
+                    }
+                    break;
+                }
+            }
+            if(!useProfileShipping){
+               System.out.print("Shipping Address: ");
+                while(true){
+                    shipping = scan.nextLine();
+                    if(shipping == null || shipping.equals("")){
+                        System.out.println("Error: Please try again!");
+                        continue;
+                    }
+                    break;
+                } 
+            }
+
+            if(useProfileCardAndBilling && useProfileShipping){
+                query = "select credit_card, address from customer where customer_username='" + username + "';";
+                ResultSet rset = stmt.executeQuery(query);
+                while(rset.next()){
+                    creditCard = rset.getString("credit_card");
+                    billing = shipping = rset.getString("address");
+                }   
+            }else if(useProfileCardAndBilling){
+                query = "select credit_card, address from customer where customer_username='" + username + "';";
+                ResultSet rset = stmt.executeQuery(query); 
+                while(rset.next()){
+                    creditCard = rset.getString("credit_card");
+                    billing = rset.getString("address");
+                }  
+            }else if(useProfileShipping){
+                query = "select credit_card, address from customer where customer_username='" + username + "';";
+                ResultSet rset = stmt.executeQuery(query);  
+                while(rset.next()){
+                    shipping = rset.getString("address");
+                }  
+            }
+            String dateTime = LocalDateTime.now().toString();
+
+            query = "update shopping_cart set date_time_of_purchase='" + dateTime + "', customer_username='" + username + "', shipping_address='" + shipping + "', billing_address='" + billing + "', credit_card=" + creditCard + ", amount_paid=" + total + ", package_tracking='In-Transit' where shopping_cart_id=" + cartId + ";";
+            stmt.executeUpdate(query);
+
+            System.out.println("Thank You for your Purchase! :)");
+
+            createCart(username);
+            return true;
+
+            
+
+
+        }catch (Exception sqle){
+            System.out.println("Exception: " + sqle);
+            return false;
+        }
+    }
+
     public static void removeFromCart(Scanner scan, String cartId, ArrayList<String> removeIsbns){
         try(
             Connection conn = DriverManager.getConnection(
-                "jdbc:postgresql://localhost:5432" + DB_PATH,
+                DB_HOST + DB_PATH,
                 DB_USER, DB_PASS
             );
             Statement stmt = conn.createStatement();
@@ -480,13 +617,45 @@ public class LookInnaBook{
         }
     }
 
+    public static void viewPurchases(String username){
+        try(
+            Connection conn = DriverManager.getConnection(
+                DB_HOST + DB_PATH,
+                DB_USER, DB_PASS
+            );
+            Statement stmt = conn.createStatement();
+        ){
+            System.out.println("=== " + username + "'s Orders ===");
+            String query = "select * from shopping_cart natural join in_cart natural join book where customer_username='" + username + "' and date_time_of_purchase is not null order by shopping_cart_id;";
+            ResultSet rset = stmt.executeQuery(query);
+
+            String prev = "";
+            while(rset.next()){
+                String currCartId = rset.getString("shopping_cart_id");
+                if(!(currCartId.equals(prev))){
+                    System.out.println("===============================================");
+                    System.out.println("Order Purchased: " + rset.getString("date_time_of_purchase"));
+                    System.out.println("Amount Paid: $" + rset.getString("amount_paid"));
+                    System.out.println("Tracking Status: " + rset.getString("package_tracking"));
+                    System.out.println("Shipping to: " + rset.getString("shipping_address"));
+                    System.out.println("Contents:");
+                }
+                System.out.println("- " + rset.getString("title") + " x" + rset.getString("quantity"));
+                prev = currCartId;
+            }
+        }catch (Exception sqle){
+            System.out.println("Exception: " + sqle);
+            return;
+        }
+    }
+
     public static void customerLoop(Scanner scan){
         //Login
         System.out.println("Connecting to Database...");
         String username = null;
         try(
             Connection conn = DriverManager.getConnection(
-                "jdbc:postgresql://localhost:5432" + DB_PATH,
+                DB_HOST + DB_PATH,
                 DB_USER, DB_PASS
             );
             Statement stmt = conn.createStatement();
@@ -531,7 +700,7 @@ public class LookInnaBook{
             }else if(selection.equals("2")){
                 viewCart(scan, username);
             }else if(selection.equals("3")){
-                //Function
+                viewPurchases(username);
             }else if(selection.equals("q")){
                 break;
             }else{
@@ -544,7 +713,7 @@ public class LookInnaBook{
     public static boolean createCart(String username){
         try(
             Connection conn = DriverManager.getConnection(
-                "jdbc:postgresql://localhost:5432" + DB_PATH,
+                DB_HOST + DB_PATH,
                 DB_USER, DB_PASS
             );
             Statement stmt = conn.createStatement();
@@ -558,7 +727,7 @@ public class LookInnaBook{
             }
             newCartId++;
 
-            query = "insert into shopping_cart values(" + newCartId + ", '" + username + "');";
+            query = "insert into shopping_cart values(" + newCartId + ", '" + username + "', null,null,null,null,null,null);";
             stmt.executeUpdate(query);
             return true;
 
@@ -572,7 +741,7 @@ public class LookInnaBook{
         System.out.println("Connecting to Database...");
         try(
             Connection conn = DriverManager.getConnection(
-                "jdbc:postgresql://localhost:5432" + DB_PATH,
+                DB_HOST + DB_PATH,
                 DB_USER, DB_PASS
             );
             Statement stmt = conn.createStatement();

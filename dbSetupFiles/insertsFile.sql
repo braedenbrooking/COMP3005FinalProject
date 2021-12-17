@@ -5,7 +5,6 @@ delete from book;
 delete from wrote;
 delete from shopping_cart;
 delete from in_cart;
-delete from purchase;
 delete from stock_refill_order;
 
 insert into customer values ('jeff77', 'Jeff Jefferson', '1234 Jubilife Street, Ottawa, ON, H0H 0H0', 1234567890123456, 'jeff77@hotmail.com', 6135550001);
@@ -92,9 +91,9 @@ insert into wrote values(10, 9780143128540);
 insert into wrote values(10, 9780143128571);
 insert into wrote values(10, 9780143128564);
 
-insert into shopping_cart values(1, 'jeff77');
-insert into shopping_cart values(2, 'tim12');
-insert into shopping_cart values(3, 'yolanda45');
+insert into shopping_cart values(1, 'jeff77', null,null,null,null,null,null);
+insert into shopping_cart values(2, 'tim12', null,null,null,null,null,null);
+insert into shopping_cart values(3, 'yolanda45', null,null,null,null,null,null);
 
 insert into in_cart values(1, 9780007458424, 4);
 insert into in_cart values(1, 9780771008795, 2);
