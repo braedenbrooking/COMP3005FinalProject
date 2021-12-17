@@ -92,5 +92,5 @@ create table stock_order
 	 foreign key (publisher_name) references publisher
 	 	on delete cascade,
 	 foreign key (ISBN) references book
-	 	on delete cascade
+	 	on delete set null
 	);

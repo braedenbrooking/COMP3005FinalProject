@@ -177,19 +177,14 @@ public class LookInnaBook{
             );
             Statement stmt = conn.createStatement();
         ){
-            System.out.println("Hi");
             String query = "select count(*) from author;";
             ResultSet rset = stmt.executeQuery(query);
             int nextId = 0;
-            System.out.println("Hi1.5");
             while(rset.next()){
-                System.out.println("Hi2");
                 nextId = Integer.parseInt(rset.getString("count")) + 1;
             }
-            System.out.println("Hi3");
             query = "insert into author values(" + nextId + ", '" + authorName + "');";
             stmt.executeUpdate(query);
-            System.out.println("Hi4");
             return nextId;
         }catch (Exception sqle){
             System.out.println("Exception: " + sqle);
@@ -236,6 +231,105 @@ public class LookInnaBook{
         }   
     }
 
+    public static void removeBook(Scanner scan){
+        try(
+            Connection conn = DriverManager.getConnection(
+                DB_HOST + DB_PATH,
+                DB_USER, DB_PASS
+            );
+            Statement stmt = conn.createStatement();
+        ){
+            while(true){
+                System.out.print("ISBN of the book you are removing (or 'end' when done): ");
+                String isbn = scan.nextLine();
+                if(isbn.equals("end")){
+                    break;
+                }else if(!isNumeric(isbn)){
+                    System.out.println("Error: Not numeric please try again");
+                    continue;
+                }
+
+                String query = "select count(*), author_id from wrote where author_id in (select author_id from wrote where ISBN=" + isbn + ") group by author_id;";
+                ResultSet rset = stmt.executeQuery(query);
+                boolean bookDoesNotExistFlag = false;
+                while(rset.next()){
+                    int count = Integer.parseInt(rset.getString("count"));
+                    if(count == 0){
+                        System.out.println("That book does not exist in the database");
+                        bookDoesNotExistFlag = true;
+                        break;
+                    }else if(count == 1){
+                        removeAuthor(rset.getString("author_id"));
+                    }
+                }
+
+                if(bookDoesNotExistFlag){
+                    continue;
+                }
+
+                query = "select count(*), publisher_name from book where publisher_name in (select publisher_name from book where ISBN=" + isbn + ") group by publisher_name;";
+                rset = stmt.executeQuery(query);
+                boolean deletedPublisher = false;
+                while(rset.next()){
+                    int count = Integer.parseInt(rset.getString("count"));
+                    if(count == 0){
+                        throw new Exception("What");
+                    }else if(count == 1){
+                        deletedPublisher = removePublisher(rset.getString("publisher_name"));
+                        break;
+                    }
+                }
+                if(deletedPublisher) continue;
+
+                query = "delete from book where ISBN=" + isbn + ";";
+                stmt.executeUpdate(query); 
+                System.out.println(isbn + " was succesfully delted");
+            }
+
+
+        }catch (Exception sqle){
+            System.out.println("Exception: " + sqle);
+            return;
+        }
+    }
+
+    public static boolean removeAuthor(String authorId){
+        try(
+            Connection conn = DriverManager.getConnection(
+                DB_HOST + DB_PATH,
+                DB_USER, DB_PASS
+            );
+            Statement stmt = conn.createStatement();
+        ){
+
+            String query = "delete from author where author_id='" + authorId + "';";
+            stmt.executeUpdate(query);
+            System.out.println("Last book from author with id=" + authorId + " was removed so author is removed aswell");
+            return true;
+        }catch (Exception sqle){
+            System.out.println("Exception: " + sqle);
+            return false;
+        }
+    }
+
+    public static boolean removePublisher(String publisherName){
+        try(
+            Connection conn = DriverManager.getConnection(
+                DB_HOST + DB_PATH,
+                DB_USER, DB_PASS
+            );
+            Statement stmt = conn.createStatement();
+        ){
+            String query = "delete from publisher where publisher_name='" + publisherName + "';";
+            stmt.executeUpdate(query);
+            System.out.println("Last book from publisher " + publisherName + " was removed so publisher is removed aswell");
+            return true;
+        }catch (Exception sqle){
+            System.out.println("Exception: " + sqle);
+            return false;
+        }
+    }
+
 
     public static void ownerLoop(Scanner scan){
         while(true){
@@ -254,7 +348,7 @@ public class LookInnaBook{
             if(selection.equals("1")){
                 addBook(scan);
             }else if(selection.equals("2")){
-                //Function
+                removeBook(scan);
             }else if(selection.equals("3")){
                 //Function
             }else if(selection.equals("4")){
@@ -994,8 +1088,6 @@ public class LookInnaBook{
         System.out.println("==========================");
         System.out.println("Welcome to Look Inna Book!");
         System.out.println("==========================");
-        System.out.println();
-        System.out.println();
         while(true){
             System.out.println("=== Main Menu ===");
             System.out.println("Who are you?");
