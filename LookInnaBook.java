@@ -557,9 +557,17 @@ public class LookInnaBook{
             }
             String dateTime = LocalDateTime.now().toString();
 
-            query = "update shopping_cart set date_time_of_purchase='" + dateTime + "', customer_username='" + username + "', shipping_address='" + shipping + "', billing_address='" + billing + "', credit_card=" + creditCard + ", amount_paid=" + total + ", package_tracking='In-Transit' where shopping_cart_id=" + cartId + ";";
+            query = "select count(*) from tracking;";
+            ResultSet rset = stmt.executeQuery(query);
+            int trackingNumber = 0;
+            while(rset.next()){
+                trackingNumber = Integer.parseInt(rset.getString("count")) + 1;
+            }
+
+            query = "insert into tracking values(" + trackingNumber + ", '" + dateTime + "', '" + shipping + "', '" + billing + "', " + creditCard + ", " + total + ", 'In-Transit', " + cartId +", '" + username + "');";
             stmt.executeUpdate(query);
 
+            System.out.println("Your Tracking Number: " + trackingNumber);
             System.out.println("Thank You for your Purchase! :)");
 
             createCart(username);
@@ -617,7 +625,7 @@ public class LookInnaBook{
         }
     }
 
-    public static void viewPurchases(String username){
+    public static void trackOrders(Scanner scan, String username){
         try(
             Connection conn = DriverManager.getConnection(
                 DB_HOST + DB_PATH,
@@ -625,23 +633,45 @@ public class LookInnaBook{
             );
             Statement stmt = conn.createStatement();
         ){
-            System.out.println("=== " + username + "'s Orders ===");
-            String query = "select * from shopping_cart natural join in_cart natural join book where customer_username='" + username + "' and date_time_of_purchase is not null order by shopping_cart_id;";
+            String tracking_number = null;
+            while(true){
+                System.out.print("Enter Tracking Number (just enter for all orders on your account): ");
+                String selection = scan.nextLine();
+                if(selection.equals("")){
+                    tracking_number = null;
+                    break;
+                }else if(!isNumeric(selection)){
+                    System.out.println("Answer not numeric, please try again");
+                }else{
+                    tracking_number = selection;
+                    break;
+                }
+            }
+            String query = "";
+            if(tracking_number == null){
+                System.out.println("=== " + username + "'s Orders ===");
+                query = "select * from tracking natural join shopping_cart natural join in_cart natural join book where customer_username='" + username + "' order by date_time_of_purchase;";
+            }else{
+                System.out.println("=== Order Number: " + tracking_number + " ===");
+                query = "select * from tracking natural join shopping_cart natural join in_cart natural join book where tracking_number=" + tracking_number + ";";
+            }
             ResultSet rset = stmt.executeQuery(query);
 
             String prev = "";
             while(rset.next()){
-                String currCartId = rset.getString("shopping_cart_id");
-                if(!(currCartId.equals(prev))){
+                String currTrackNum = rset.getString("tracking_number");
+                if(!(currTrackNum.equals(prev))){
                     System.out.println("===============================================");
                     System.out.println("Order Purchased: " + rset.getString("date_time_of_purchase"));
+                    System.out.println("Ordered By: " + rset.getString("customer_username"));
                     System.out.println("Amount Paid: $" + rset.getString("amount_paid"));
-                    System.out.println("Tracking Status: " + rset.getString("package_tracking"));
+                    System.out.println("Tracking Number: " + rset.getString("tracking_number"));
+                    System.out.println("Tracking Status: " + rset.getString("tracking_status"));
                     System.out.println("Shipping to: " + rset.getString("shipping_address"));
                     System.out.println("Contents:");
                 }
                 System.out.println("- " + rset.getString("title") + " x" + rset.getString("quantity"));
-                prev = currCartId;
+                prev = currTrackNum;
             }
         }catch (Exception sqle){
             System.out.println("Exception: " + sqle);
@@ -700,7 +730,7 @@ public class LookInnaBook{
             }else if(selection.equals("2")){
                 viewCart(scan, username);
             }else if(selection.equals("3")){
-                viewPurchases(username);
+                trackOrders(scan, username);
             }else if(selection.equals("q")){
                 break;
             }else{
@@ -727,7 +757,7 @@ public class LookInnaBook{
             }
             newCartId++;
 
-            query = "insert into shopping_cart values(" + newCartId + ", '" + username + "', null,null,null,null,null,null);";
+            query = "insert into shopping_cart values(" + newCartId + ", '" + username + "');";
             stmt.executeUpdate(query);
             return true;
 

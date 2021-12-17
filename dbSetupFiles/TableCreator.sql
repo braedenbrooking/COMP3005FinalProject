@@ -49,12 +49,6 @@ create table wrote
 create table shopping_cart
 	(shopping_cart_id	numeric(12,0),
 	 customer_username	varchar(50),
-	 date_time_of_purchase   		varchar(50),
-	 shipping_address 	varchar(100),
-	 billing_address	varchar(100),
-	 credit_card	numeric(16,0),
-	 amount_paid	numeric(12,2),
-	 package_tracking	varchar(50),
 	 primary key (shopping_cart_id),
 	 foreign key (customer_username) references customer
 	 	on delete cascade
@@ -69,6 +63,23 @@ create table in_cart
 	 	on delete cascade,
 	 foreign key (ISBN) references book
 	 	on delete cascade
+	);
+
+create table tracking
+	(tracking_number numeric(12,0),
+	 date_time_of_purchase   		varchar(50),
+	 shipping_address 	varchar(100),
+	 billing_address	varchar(100),
+	 credit_card	numeric(16,0),
+	 amount_paid	numeric(12,2),
+	 tracking_status	varchar(50),
+	 shopping_cart_id	numeric(12,0),
+	 customer_username	varchar(50),
+	 primary key(tracking_number),
+	 foreign key (shopping_cart_id) references shopping_cart
+	 	on delete set null,
+	 foreign key (customer_username) references customer
+	 	on delete set null
 	);
 
 create table stock_refill_order
