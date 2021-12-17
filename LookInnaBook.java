@@ -318,7 +318,7 @@ public class LookInnaBook{
             ArrayList<String> isbnsInCart = new ArrayList<String>();
             ArrayList<ArrayList<String>> booksInCart = new ArrayList<ArrayList<String>>();
             while(true){
-                String query = "select title, price, quantity, ISBN from shopping_cart natural join in_cart natural join book where shopping_cart_id=" + cartId + " order by title;";
+                String query = "select title, price, quantity, ISBN from shopping_cart natural join in_cart natural join book where shopping_cart_id=" + cartId + " and quantity>0 order by title;";
 
                 ResultSet rset = stmt.executeQuery(query);
                 double subtotal = 0.0;
@@ -403,6 +403,9 @@ public class LookInnaBook{
 
                 if(removeIsbns.size()>0) removeFromCart(scan, cartId, removeIsbns);
                 else break;
+
+                isbnsInCart = new ArrayList<String>();
+                booksInCart = new ArrayList<ArrayList<String>>();
             }
 
             System.out.println("Are you ready to checkout? (y/n)");
@@ -615,7 +618,6 @@ public class LookInnaBook{
             }
             query = "delete from in_cart where shopping_cart_id=" + cartId + ";";
             stmt.executeUpdate(query);
-
             if(isbnsInCart.size()>0) addToCart(cartId, isbnsInCart);
 
 
