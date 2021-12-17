@@ -5,8 +5,8 @@ delete from book;
 delete from wrote;
 delete from shopping_cart;
 delete from in_cart;
-delete from stock_refill_order;
-delete from tracking;
+delete from stock_order;
+delete from purchase;
 
 insert into customer values ('jeff77', 'Jeff Jefferson', '1234 Jubilife Street, Ottawa, ON, H0H 0H0', 1234567890123456, 'jeff77@hotmail.com', 6135550001);
 insert into customer values ('tim12', 'Tim Thompson', '9876 Veilstone Way, Ottawa, ON, H0H 0H0', 1111222233334444, 'timmytom@thunderbird.com', 6135550002);
@@ -24,38 +24,38 @@ insert into author values(10,'William Shakespeare');
 insert into publisher values('Pseudorandom House', 123456789012, '15 Melancholy Way, Ottawa, ON, H0H 0H0', 'contact@pseudorandomhouse.ca', 6135551111);
 insert into publisher values('Flightless Bird', 098765432109, '88 Snowbelle Street, Ottawa, ON, H0H 0H0', 'contact@flightlessbirdpublishing.net', 6135552222);
 insert into publisher values('Post-Secondary University Press', 102938475610, '31 Rusborough Road, Ottawa, ON, H0H 0H0', 'contact-press@post-secondaryuniversty.edu', 6135552222);
-insert into book values(9780261102354, 'Lord of the Rings: The Fellowship of the Ring', 10.99, 448, 13, 'Fantasy', 'Pseudorandom House');
-insert into book values(9780261102361, 'Lord of the Rings: The Two Towers', 10.99, 464, 14, 'Fantasy', 'Pseudorandom House');
-insert into book values(9780261102378, 'Lord of the Rings: The Return of the King', 10.99, 464, 15, 'Fantasy', 'Pseudorandom House');
-insert into book values(9780261102736, 'The Silmarillion', 10.99, 480, 20, 'Fantasy', 'Pseudorandom House');
-insert into book values(9780007458424, 'The Hobbit', 10.99, 368, 10, 'Fantasy', 'Pseudorandom House');
+insert into book values(9780261102354, 'Lord of the Rings: The Fellowship of the Ring', 10.99, 10.1, 448, 13, 'Fantasy', 'Pseudorandom House');
+insert into book values(9780261102361, 'Lord of the Rings: The Two Towers', 10.99, 10.1, 464, 14, 'Fantasy', 'Pseudorandom House');
+insert into book values(9780261102378, 'Lord of the Rings: The Return of the King', 10.99, 10.1, 464, 15, 'Fantasy', 'Pseudorandom House');
+insert into book values(9780261102736, 'The Silmarillion', 10.99, 10.35, 480, 20, 'Fantasy', 'Pseudorandom House');
+insert into book values(9780007458424, 'The Hobbit', 10.99, 9.9, 368, 10, 'Fantasy', 'Pseudorandom House');
 
-insert into book values(9781400079278, 'Kafka on the Shore', 21.27, 480, 10, 'Magical Realism', 'Flightless Bird');
-insert into book values(9780375704024, 'Norwegian Wood', 23.00, 304, 10, 'Magical Realism', 'Flightless Bird');
-insert into book values(9780385678025, '1Q84', 35.00, 1184, 10, 'Magical Realism', 'Flightless Bird');
+insert into book values(9781400079278, 'Kafka on the Shore', 21.27, 15.2, 480, 10, 'Magical Realism', 'Flightless Bird');
+insert into book values(9780375704024, 'Norwegian Wood', 23.00, 15.2, 304, 10, 'Magical Realism', 'Flightless Bird');
+insert into book values(9780385678025, '1Q84', 35.00, 15.2, 1184, 10, 'Magical Realism', 'Flightless Bird');
 
-insert into book values(9781538713839, 'The President is Missing', 23.49, 528, 10, 'Thriller', 'Post-Secondary University Press');
-insert into book values(9780316540711, 'The President''s Daughter', 22.26, 608, 10, 'Thriller', 'Post-Secondary University Press');
-insert into book values(9780316499149, 'Fear No Evil', 25.00, 400, 50, 'Thriller', 'Post-Secondary University Press');
+insert into book values(9781538713839, 'The President is Missing', 23.49, 25.25, 528, 10, 'Thriller', 'Post-Secondary University Press');
+insert into book values(9780316540711, 'The President''s Daughter', 22.26, 25.25, 608, 10, 'Thriller', 'Post-Secondary University Press');
+insert into book values(9780316499149, 'Fear No Evil', 25.00, 25.25, 400, 50, 'Thriller', 'Post-Secondary University Press');
 
-insert into book values(9781982136079, '1922', 13.01, 144, 25, 'Horror', 'Pseudorandom House');
-insert into book values(9780307743657, 'The Shining', 9.11, 688, 25, 'Horror', 'Pseudorandom House');
+insert into book values(9781982136079, '1922', 13.01, 25.25, 144, 25, 'Horror', 'Pseudorandom House');
+insert into book values(9780307743657, 'The Shining', 9.11, 25.25, 688, 25, 'Horror', 'Pseudorandom House');
 
-insert into book values(9780771008795, 'The Handmaid''s Tale', 19.95, 384, 15, 'Science Fiction', 'Flightless Bird');
-insert into book values(9780771009457, 'The Testaments', 22.00, 448, 14, 'Science Fiction', 'Flightless Bird');
+insert into book values(9780771008795, 'The Handmaid''s Tale', 19.95, 5.25, 384, 15, 'Science Fiction', 'Flightless Bird');
+insert into book values(9780771009457, 'The Testaments', 22.00, 5.25, 448, 14, 'Science Fiction', 'Flightless Bird');
 
-insert into book values(9780345404473, 'Do Androids Dream of Electric Sheep?', 12.99, 240, 11, 'Science Fiction', 'Post-Secondary University Press');
-insert into book values(9780547572482, 'The Man in the High Castle', 22.55, 288, 11, 'Dystopian', 'Post-Secondary University Press');
-insert into book values(9780547572178, 'A Scanner Darkly', 22.94, 304, 10, 'Science Fiction', 'Post-Secondary University Press');
+insert into book values(9780345404473, 'Do Androids Dream of Electric Sheep?', 12.99, 7.25, 240, 11, 'Science Fiction', 'Post-Secondary University Press');
+insert into book values(9780547572482, 'The Man in the High Castle', 22.55, 7.25, 288, 11, 'Dystopian', 'Post-Secondary University Press');
+insert into book values(9780547572178, 'A Scanner Darkly', 22.94, 7.25, 304, 10, 'Science Fiction', 'Post-Secondary University Press');
 
-insert into book values(9780593357132, 'The Martian', 12.99, 480, 17, 'Science Fiction', 'Pseudorandom House');
-insert into book values(9780553448122, 'Artemis', 8.00, 320, 16, 'Science Fiction', 'Pseudorandom House');
+insert into book values(9780593357132, 'The Martian', 12.99, 17.25, 480, 17, 'Science Fiction', 'Pseudorandom House');
+insert into book values(9780553448122, 'Artemis', 8.00, 17.25, 320, 16, 'Science Fiction', 'Pseudorandom House');
 
-insert into book values(9780802142443, 'Kitchen', 23.95, 160, 10, 'Drama', 'Flightless Bird');
+insert into book values(9780802142443, 'Kitchen', 23.95, 40.25, 160, 10, 'Drama', 'Flightless Bird');
 
-insert into book values(9780143128540, 'Hamlet', 13.50, 208, 12, 'Classic', 'Post-Secondary University Press');
-insert into book values(9780143128571, 'Romeo and Juliet', 13.50, 176, 11, 'Classic', 'Post-Secondary University Press');
-insert into book values(9780143128564, 'Macbeth', 13.50, 144, 10, 'Classic', 'Post-Secondary University Press');
+insert into book values(9780143128540, 'Hamlet', 13.50, 2.5, 208, 12, 'Classic', 'Post-Secondary University Press');
+insert into book values(9780143128571, 'Romeo and Juliet', 13.50, 2.5, 176, 11, 'Classic', 'Post-Secondary University Press');
+insert into book values(9780143128564, 'Macbeth', 13.50, 2.5, 144, 10, 'Classic', 'Post-Secondary University Press');
 
 insert into wrote values(1, 9780261102354);
 insert into wrote values(1, 9780261102361);

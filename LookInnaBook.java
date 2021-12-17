@@ -7,7 +7,6 @@ package COMP3005FinalProject;
 //Reminder to myself for how to run this
 //java -cp .;"C:\Users\braed\Downloads\postgresql-42.2.24.jar" COMP3005FinalProject/LookInnaBook
 
-
 import java.util.Scanner;
 import java.sql.*;
 import java.util.ArrayList;
@@ -24,6 +23,220 @@ public class LookInnaBook{
     public static final String DB_HOST = "jdbc:postgresql://localhost:5432";
     public static final DecimalFormat df = new DecimalFormat("0.00");
 
+    public static void addBook(Scanner scan){
+        try(
+            Connection conn = DriverManager.getConnection(
+                DB_HOST + DB_PATH,
+                DB_USER, DB_PASS
+            );
+            Statement stmt = conn.createStatement();
+        ){
+            while(true){
+                System.out.print("ISBN: ");
+                String newBookIsbn = scan.nextLine();
+                System.out.print("Title: ");
+                String newBookTitle = scan.nextLine();
+                System.out.print("Genre: ");
+                String newBookGenre = scan.nextLine();
+                String newBookPages = "";
+                while(true){
+                    System.out.print("Pages: ");
+                    newBookPages = scan.nextLine();
+                    if(!isNumeric(newBookPages)){
+                        System.out.println("Error: Must be numeric");
+                    }
+                    break;
+                }
+                String newBookPrice = "";
+                while(true){
+                    System.out.print("Price: ");
+                    newBookPrice = scan.nextLine();
+                    if(!isNumeric(newBookPrice)){
+                        System.out.println("Error: Must be numeric");
+                    }
+                    break;
+                }
+
+                System.out.print("Publisher: ");
+                String newBookPublisher = scan.nextLine();
+                //Check if publisher is in the database already
+                String query = "select count(*) from publisher where publisher_name='" + newBookPublisher + "';";
+                ResultSet rset = stmt.executeQuery(query);
+                int count=0;
+                while(rset.next()){
+                    count = Integer.parseInt(rset.getString("count"));
+                }
+
+                if(count == 0){
+                    System.out.println(newBookPublisher + " is a new publisher. Please fill out their information: ");
+                    if(!addPublisher(scan, newBookPublisher)) throw new Exception("Error: Cannot add publisher");
+                }
+
+                String newBookStock = "";
+                while(true){
+                    System.out.print("# of " + newBookTitle + " to Purchase from Publisher: ");
+                    newBookStock = scan.nextLine();
+                    if(!isNumeric(newBookStock)){
+                        System.out.println("Error: Must be numeric");
+                    }
+                    break;
+
+                }
+
+                String newBookPercentage = "";
+                while(true){
+                    System.out.print("% of sales to send Publisher: ");
+                    newBookPercentage = scan.nextLine();
+                    if(!isNumeric(newBookPercentage)){
+                        System.out.println("Error: Must be numeric");
+                    }
+                    break;
+                }
+
+                query = "insert into book values(" + newBookIsbn + ", '" + newBookTitle + "', " + newBookPrice + ", " + newBookPercentage + ", " + newBookPages + ", " + newBookStock + ", '" + newBookGenre + "', '" + newBookPublisher + "');";
+                stmt.executeUpdate(query);
+
+                int index = 1;
+                while(true){
+                    System.out.print("Author #" + index + ": ");
+                    String newBookAuthorName = scan.nextLine();
+                    if(newBookAuthorName.equals("") && index>1){
+                        break;
+                    }else if(newBookAuthorName.equals("") && index==1){
+                        System.out.println("Must have at least 1 author");
+                        continue;
+                    }
+                    //Check if author is in the database. This allows for multiple authors of the same name
+                    query = "select count(name) from author where name='" + newBookAuthorName + "';";
+                    rset = stmt.executeQuery(query);
+                    count = 0;
+                    int newBookAuthorId = -1;
+                    while(rset.next()){
+                        count = Integer.parseInt(rset.getString("count"));
+                        if(count==0){
+                            newBookAuthorId = addAuthor(newBookAuthorName);
+                            break;
+                        }else{
+                            query = "select title, author_id from author natural join wrote natural join book where name='" + newBookAuthorName + "' order by author_id;";
+                            ResultSet rset2 = stmt.executeQuery(query);
+                            int prev = -1;
+                            int finalAuthorId = -1;
+                            while(rset2.next()){
+                                int currAuthorId = Integer.parseInt(rset2.getString("author_id"));
+                                if(currAuthorId == prev){
+                                    continue;
+                                }
+                                System.out.println("Is this the same author that wrote " + rset2.getString("title") + "? (y/n)");
+                                if(yesOrNo(scan)) finalAuthorId = currAuthorId;
+                                
+                                if(finalAuthorId != -1){
+                                    break;
+                                }else{
+                                    prev = currAuthorId;
+                                }
+                            }
+                            if(finalAuthorId == -1){
+                                newBookAuthorId = addAuthor(newBookAuthorName);
+                                break;
+                            }else{
+                                newBookAuthorId = finalAuthorId;
+                                break;
+                            }
+                        }
+                    }
+
+                    if(newBookAuthorId == -1) throw new Exception("Error: Author ID invalid");
+
+                    query = "insert into wrote values(" + newBookAuthorId + ", " + newBookIsbn + ");";
+                    stmt.executeUpdate(query);
+
+                    System.out.println("Add another author?(y/n)");
+                    if(!yesOrNo(scan)){
+                        break;
+                    }
+                    index++;
+                }
+                System.out.println("Book Added!");
+                System.out.println("Add another book? (y/n)");
+                if(!yesOrNo(scan)){
+                    break;
+                }
+
+            }
+        }catch (Exception sqle){
+            System.out.println("Exception: " + sqle);
+            return;
+        }
+    }
+
+    public static int addAuthor(String authorName){
+        try(
+            Connection conn = DriverManager.getConnection(
+                DB_HOST + DB_PATH,
+                DB_USER, DB_PASS
+            );
+            Statement stmt = conn.createStatement();
+        ){
+            System.out.println("Hi");
+            String query = "select count(*) from author;";
+            ResultSet rset = stmt.executeQuery(query);
+            int nextId = 0;
+            System.out.println("Hi1.5");
+            while(rset.next()){
+                System.out.println("Hi2");
+                nextId = Integer.parseInt(rset.getString("count")) + 1;
+            }
+            System.out.println("Hi3");
+            query = "insert into author values(" + nextId + ", '" + authorName + "');";
+            stmt.executeUpdate(query);
+            System.out.println("Hi4");
+            return nextId;
+        }catch (Exception sqle){
+            System.out.println("Exception: " + sqle);
+            return -1;
+        }
+    }
+
+    public static boolean addPublisher(Scanner scan, String publisherName){
+        try(
+            Connection conn = DriverManager.getConnection(
+                DB_HOST + DB_PATH,
+                DB_USER, DB_PASS
+            );
+            Statement stmt = conn.createStatement();
+        ){
+            String newPublisherBank = "";
+            while(true){
+                System.out.print("Bank Account: ");
+                newPublisherBank = scan.nextLine();
+                if(!isNumeric(newPublisherBank)){
+                    System.out.println("Error: Must be numeric");
+                }
+                break;
+            }
+            System.out.print("Address: ");
+            String newPublisherAddress = scan.nextLine();
+            System.out.print("Email: ");
+            String newPublisherEmail = scan.nextLine();
+            String newPublisherPhone = "";
+            while(true){
+                System.out.print("Phone Number: ");
+                newPublisherPhone = scan.nextLine();
+                if(!isNumeric(newPublisherPhone)){
+                    System.out.println("Error: Must be numeric");
+                }
+                break;
+            }
+            String query = "insert into publisher values('" + publisherName + "', " + newPublisherBank + ", '" + newPublisherAddress + "', '" + newPublisherEmail + "', " + newPublisherPhone + ");";
+            stmt.executeUpdate(query);
+            return true;
+        }catch (Exception sqle){
+            System.out.println("Exception: " + sqle);
+            return false;
+        }   
+    }
+
+
     public static void ownerLoop(Scanner scan){
         while(true){
             System.out.println();
@@ -39,7 +252,7 @@ public class LookInnaBook{
 
             String selection = scan.nextLine();
             if(selection.equals("1")){
-                //Function
+                addBook(scan);
             }else if(selection.equals("2")){
                 //Function
             }else if(selection.equals("3")){
@@ -58,7 +271,19 @@ public class LookInnaBook{
     }
 
 
-    //Helper Function
+    //Helper Functions
+    public static boolean yesOrNo(Scanner scan){
+        while(true){
+            String selection = scan.nextLine();
+            if(selection.equals("y")){
+                return true;
+            }else if(selection.equals("n")){
+                return false;
+            }else{
+                System.out.println("Just y or n");
+            }
+        }
+    }
     public static boolean isNumeric(String str){
         try{
             Double.parseDouble(str);
@@ -211,19 +436,7 @@ public class LookInnaBook{
 
 
                 System.out.println("Would you like to search again? (y/n)");
-                boolean flag = false;
-                while(true){
-                    String choice = scan.nextLine();
-                    if(choice.equals("n")){
-                        flag = true;
-                        break;
-                    }else if(choice.equals("y")){
-                        break;
-                    }else{
-                        System.out.println("Only answer with y or n");
-                    }
-                }
-                if(flag) break;
+                if(!yesOrNo(scan)) break;
 
             }
         }catch (Exception sqle){
@@ -361,18 +574,7 @@ public class LookInnaBook{
                 System.out.println("Total: $" + df.format(total)); 
 
                 System.out.println("Would you like to remove anything? (y/n)");
-                boolean wantToRemove = false;
-                while(booksInCart.size()>0){
-                    String selection = scan.nextLine();
-                    if(selection.equals("y")){
-                        wantToRemove = true;
-                        break;
-                    }else if(selection.equals("n")){
-                        break;
-                    }else{
-                        System.out.println("Just enter y or n");
-                    }
-                }
+                boolean wantToRemove = yesOrNo(scan);
                 if(wantToRemove) System.out.println("Enter the index you want to remove: ('end' to stop)");
                 ArrayList<String> removeIsbns = new ArrayList<String>();
                 while(wantToRemove){
@@ -410,17 +612,7 @@ public class LookInnaBook{
 
             System.out.println("Are you ready to checkout? (y/n)");
             boolean successfulPurchase = false;
-            while(true){
-                String selection = scan.nextLine();
-                if(selection.equals("y")){
-                    successfulPurchase = checkout(scan, cartId, username, total);
-                    break;
-                }else if(selection.equals("n")){
-                    break;
-                }else{
-                    System.out.println("Just enter y or n");
-                }
-            }
+            if(yesOrNo(scan)) successfulPurchase = checkout(scan, cartId, username, total);
 
             if(successfulPurchase){
                 for(int i=0; i<isbnsInCart.size(); i++){
@@ -452,7 +644,7 @@ public class LookInnaBook{
             }
             if(stock < 10){
                 String dateTime = LocalDateTime.now().toString();
-                query = "insert into stock_refill_order values('" + dateTime + "', '" + publisher + "', " + isbn + ");";
+                query = "insert into stock_order values('" + dateTime + "', '" + publisher + "', " + isbn + ", " + 10 +");";
                 stmt.executeUpdate(query);
                 query = "update book set stock=stock+" + 10 + " where ISBN=" + isbn + ";";
                 stmt.executeUpdate(query);
@@ -474,32 +666,9 @@ public class LookInnaBook{
             String query;
             
             System.out.println("Would you like to use the credit card and billing information from your profile? (y/n)");
-            boolean useProfileCardAndBilling = false;
-            while(true){
-                String selection = scan.nextLine();
-                if(selection.equals("y")){
-                    useProfileCardAndBilling = true;
-                    break;
-                }else if(selection.equals("n")){
-                    break;
-                }else{
-                    System.out.println("Just answer y or n");
-                }
-            }
-
+            boolean useProfileCardAndBilling = yesOrNo(scan);
             System.out.println("Would you like to use the shipping address from your profile? (y/n)");
-            boolean useProfileShipping = false;
-            while(true){
-                String selection = scan.nextLine();
-                if(selection.equals("y")){
-                    useProfileShipping = true;
-                    break;
-                }else if(selection.equals("n")){
-                    break;
-                }else{
-                    System.out.println("Just answer y or n");
-                }
-            }
+            boolean useProfileShipping = yesOrNo(scan);
 
             String shipping = "";
             String billing = "";
@@ -560,14 +729,14 @@ public class LookInnaBook{
             }
             String dateTime = LocalDateTime.now().toString();
 
-            query = "select count(*) from tracking;";
+            query = "select count(*) from purchase;";
             ResultSet rset = stmt.executeQuery(query);
             int trackingNumber = 0;
             while(rset.next()){
                 trackingNumber = Integer.parseInt(rset.getString("count")) + 1;
             }
 
-            query = "insert into tracking values(" + trackingNumber + ", '" + dateTime + "', '" + shipping + "', '" + billing + "', " + creditCard + ", " + total + ", 'In-Transit', " + cartId +", '" + username + "');";
+            query = "insert into purchase values(" + trackingNumber + ", '" + dateTime + "', '" + shipping + "', '" + billing + "', " + creditCard + ", " + total + ", 'In-Transit', " + cartId +", '" + username + "');";
             stmt.executeUpdate(query);
 
             System.out.println("Your Tracking Number: " + trackingNumber);
@@ -652,10 +821,10 @@ public class LookInnaBook{
             String query = "";
             if(tracking_number == null){
                 System.out.println("=== " + username + "'s Orders ===");
-                query = "select * from tracking natural join shopping_cart natural join in_cart natural join book where customer_username='" + username + "' order by date_time_of_purchase;";
+                query = "select * from purchase natural join shopping_cart natural join in_cart natural join book where customer_username='" + username + "' order by date_time_of_purchase;";
             }else{
                 System.out.println("=== Order Number: " + tracking_number + " ===");
-                query = "select * from tracking natural join shopping_cart natural join in_cart natural join book where tracking_number=" + tracking_number + ";";
+                query = "select * from purchase natural join shopping_cart natural join in_cart natural join book where tracking_number=" + tracking_number + ";";
             }
             ResultSet rset = stmt.executeQuery(query);
 
@@ -712,8 +881,6 @@ public class LookInnaBook{
             System.out.println("Exception: " + sqle);
             return;
         }
-        
-
 
         //Loop
         while(true){

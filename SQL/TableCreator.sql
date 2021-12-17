@@ -27,6 +27,7 @@ create table book
 	(ISBN			numeric(13,0), 
 	 title			varchar(50) not null, 
 	 price			numeric(12,2) check (price > 0),
+	 percentage_to_publisher 	numeric(4,2) check (percentage_to_publisher < 100),
      pages          numeric(5,0) check (pages > 0),
      stock		    numeric(5,0),
 	 genre			varchar(50),
@@ -65,7 +66,7 @@ create table in_cart
 	 	on delete cascade
 	);
 
-create table tracking
+create table purchase
 	(tracking_number numeric(12,0),
 	 date_time_of_purchase   		varchar(50),
 	 shipping_address 	varchar(100),
@@ -82,10 +83,11 @@ create table tracking
 	 	on delete set null
 	);
 
-create table stock_refill_order
+create table stock_order
 	(date_time 			varchar(50),
 	 publisher_name		varchar(50),
 	 ISBN			numeric(13,0),
+	 number_purchased	numeric(4,0),
 	 primary key (date_time, publisher_name, ISBN),
 	 foreign key (publisher_name) references publisher
 	 	on delete cascade,
