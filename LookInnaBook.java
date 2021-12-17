@@ -330,6 +330,60 @@ public class LookInnaBook{
         }
     }
 
+    public static void viewPublisher(Scanner scan){
+        try(
+            Connection conn = DriverManager.getConnection(
+                DB_HOST + DB_PATH,
+                DB_USER, DB_PASS
+            );
+            Statement stmt = conn.createStatement();
+        ){
+            String query = "";
+            System.out.print("Publisher's Name (Just enter for all): ");
+            String selection = scan.nextLine();
+            if(selection.equals("")){
+                query = "select * from publisher;";
+            }else{
+                query = "select * from publisher where publisher_name='" + selection + "';";
+            }
+            ResultSet rset = stmt.executeQuery(query);
+            while(rset.next()){
+                System.out.println("=================");
+                String publisherName = rset.getString("publisher_name");
+                System.out.println("Publisher: " + publisherName);
+                System.out.println("Bank Account: " + rset.getString("bank_account"));
+                System.out.println("Address: " + rset.getString("address"));
+                System.out.println("Email: " + rset.getString("email"));
+                System.out.println("Phone: " + rset.getString("phone_number"));
+                System.out.println("Publishes: ");
+                viewBooksByPublisher(publisherName);
+            }
+
+        }catch (Exception sqle){
+            System.out.println("Exception: " + sqle);
+            return;
+        }
+    }
+
+    public static void viewBooksByPublisher(String publisherName){
+        try(
+            Connection conn = DriverManager.getConnection(
+                DB_HOST + DB_PATH,
+                DB_USER, DB_PASS
+            );
+            Statement stmt = conn.createStatement();
+        ){
+            String query = "select title from book natural join publisher where publisher_name='" + publisherName + "' order by title;";
+            ResultSet rset = stmt.executeQuery(query);
+            while(rset.next()){
+                System.out.println("\t- " + rset.getString("title"));
+            }
+        }catch (Exception sqle){
+            System.out.println("Exception: " + sqle);
+            return;
+        }
+    }
+
 
     public static void ownerLoop(Scanner scan){
         while(true){
@@ -350,7 +404,7 @@ public class LookInnaBook{
             }else if(selection.equals("2")){
                 removeBook(scan);
             }else if(selection.equals("3")){
-                //Function
+                viewPublisher(scan);
             }else if(selection.equals("4")){
                 //Function
             }else if(selection.equals("5")){
