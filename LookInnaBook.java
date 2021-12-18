@@ -23,6 +23,7 @@ public class LookInnaBook{
     public static final String DB_HOST = "jdbc:postgresql://localhost:5432";
     public static final DecimalFormat df = new DecimalFormat("0.00");
 
+    //Owner Functions
     public static void addBook(Scanner scan){
         try(
             Connection conn = DriverManager.getConnection(
@@ -415,6 +416,78 @@ public class LookInnaBook{
         }
     }
 
+    public static void viewSalesReport(Scanner scan){
+        try(
+            Connection conn = DriverManager.getConnection(
+                DB_HOST + DB_PATH,
+                DB_USER, DB_PASS
+            );
+            Statement stmt = conn.createStatement();
+        ){
+            System.out.print("Would you like to just view sales vs expenditures (y/n):");
+            boolean salesVsExpenditures = yesOrNo(scan);
+            String salesBy = null;
+            if(!salesVsExpenditures){
+                System.out.print("View Sales by (genre, author, etc.): ");
+                salesBy = scan.nextLine().toLowerCase();
+                if(salesBy.equals("author")) salesBy = "name";
+            }
+
+            String query = null;
+            if(salesVsExpenditures){
+                query = "select price, percentage_to_publisher from purchase natural join shopping_cart natural join in_cart natural join book;";
+            }else{
+                query = "select price, percentage_to_publisher, " + salesBy + " from purchase natural join shopping_cart natural join in_cart natural join book natural join wrote natural join author order by " + salesBy + ";";
+            }
+
+            ResultSet rset = stmt.executeQuery(query);
+            ArrayList<Double> grossTotal = new ArrayList<Double>();
+            ArrayList<Double> expenses = new ArrayList<Double>();
+            ArrayList<Double> netTotal = new ArrayList<Double>();
+            ArrayList<String> elementsOfCategory = new ArrayList<String>();
+            String prev = "";
+            int index = -1;
+            if(salesBy == null) index = 0;
+            while(rset.next()){
+                String category = null;
+                if(salesBy != null) category = rset.getString(salesBy);
+                else{
+                    grossTotal.add(0.0);
+                    expenses.add(0.0);
+                    netTotal.add(0.0);
+                }
+                if(salesBy != null && !category.equals(prev)){
+                    index++;
+                    grossTotal.add(0.0);
+                    expenses.add(0.0);
+                    netTotal.add(0.0);
+                    elementsOfCategory.add(category);
+                }
+                double currPrice = Double.parseDouble(rset.getString("price"));
+                grossTotal.set(index, grossTotal.get(index)+ currPrice);
+                double currExpense = (Double.parseDouble(rset.getString("percentage_to_publisher"))/100)*currPrice;
+                expenses.set(index, expenses.get(index)+currExpense);
+                netTotal.set(index, netTotal.get(index)+(currPrice - currExpense));
+                prev = category;
+            }
+
+            if(salesBy == null) System.out.println("=== Sales Report ===");
+            else System.out.println("=== Sales Report by " + salesBy + " ===");
+            
+            for(int i=0; i<index+1; i++){
+                if(salesBy != null) System.out.println(salesBy + " = " + elementsOfCategory.get(i));
+                System.out.println("Gross Sales: $" + df.format(grossTotal.get(i)));
+                System.out.println("Expenses: $-" + df.format(expenses.get(i)));
+                System.out.println("Net Total: $" + df.format(netTotal.get(i)));
+                System.out.println("===============================");
+            }
+
+        }catch (Exception sqle){
+            System.out.println("Exception: " + sqle);
+            return;
+        }
+    }
+
 
     public static void ownerLoop(Scanner scan){
         while(true){
@@ -437,7 +510,7 @@ public class LookInnaBook{
             }else if(selection.equals("3")){
                 viewPublisher(scan);
             }else if(selection.equals("4")){
-                //Function
+                viewSalesReport(scan);
             }else if(selection.equals("5")){
                 viewOrders(scan);
             }else if(selection.equals("q")){
@@ -463,6 +536,7 @@ public class LookInnaBook{
             }
         }
     }
+
     public static boolean isNumeric(String str){
         try{
             Double.parseDouble(str);
@@ -1128,24 +1202,29 @@ public class LookInnaBook{
             boolean flag = true;
             while(flag){ // Loop until user successfully created
                 try{
-                    System.out.println("Please enter the following information (on new lines)");
-                    System.out.println("Username");
-                    System.out.println("Name");
-                    System.out.println("Address");
-                    System.out.println("Credit Card");
-                    System.out.println("Email");
-                    System.out.println("Phone Number");
+                    System.out.println("Please enter the following information");
 
+                    final String[] prompts = {"Username: ", "Name: ", "Address: ", "Credit Card: ", "Email: ", "Phone Number: "};
 
                     String[] newUserInfo = new String[6];
                     for(int i=0; i<newUserInfo.length; i++){
+                        System.out.print(prompts[i]);
                         newUserInfo[i] = scan.nextLine();
                         if(newUserInfo[i].equals("")){
                             System.out.println("You didn't enter anything. Please enter the value again:");
                             i--;
                         }
                     }
-
+                    while(true){
+                        String query = "select count(*) from customer where customer_username='" + newUserInfo[0] + "';";
+                        ResultSet rset = stmt.executeQuery(query);
+                        boolean usernameExists = false;
+                        while(rset.next()) if(Integer.parseInt(rset.getString("count"))>0) usernameExists = true;
+                        if(!usernameExists && !newUserInfo[0].equals("")) break;
+                        System.out.println("That username already exists!");
+                        System.out.print("New Username: ");
+                        newUserInfo[0] = scan.nextLine();
+                    }
                     String query = "insert into customer values ('" + newUserInfo[0] + "'";
                     for(int i=1; i<newUserInfo.length; i++){
                         query += ",'" + newUserInfo[i] + "'";
@@ -1160,6 +1239,7 @@ public class LookInnaBook{
                     System.out.println("Exception: " + e);
                     System.out.println("Please try again");
                 }
+
             }
             System.out.println("User Registered!");
         }catch (Exception sqle){

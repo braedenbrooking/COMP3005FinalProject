@@ -68,7 +68,7 @@ create table in_cart
 
 create table purchase
 	(tracking_number numeric(12,0),
-	 date_time_of_purchase   		varchar(50),
+	 date_time_of_purchase	varchar(50),
 	 shipping_address 	varchar(100),
 	 billing_address	varchar(100),
 	 credit_card	numeric(16,0),
