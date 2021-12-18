@@ -23,6 +23,7 @@ public class LookInnaBook{
     public static final String DB_HOST = "jdbc:postgresql://localhost:5432";
     public static final DecimalFormat df = new DecimalFormat("0.00");
 
+
     //Owner Functions
     public static void addBook(Scanner scan){
         try(
@@ -1189,7 +1190,7 @@ public class LookInnaBook{
         }
     }
 
-    public static void registerCustomer(Scanner scan){ // TODO improve by making it so it checks if username is taken already
+    public static void registerCustomer(Scanner scan){ 
         System.out.println("Connecting to Database...");
         try(
             Connection conn = DriverManager.getConnection(
