@@ -384,6 +384,37 @@ public class LookInnaBook{
         }
     }
 
+    public static void viewOrders(Scanner scan){
+        try(
+            Connection conn = DriverManager.getConnection(
+                DB_HOST + DB_PATH,
+                DB_USER, DB_PASS
+            );
+            Statement stmt = conn.createStatement();
+        ){
+            String query = "";
+            System.out.print("Publisher's Name (Just enter for all): ");
+            String selection = scan.nextLine();
+            if(selection.equals("")){
+                query = "select * from stock_order natural join book order by publisher_name, date_time, title;";
+            }else{
+                query = "select * from stock_order natural join book where publisher_name='" + selection + "' order by date_time;";
+            }
+            ResultSet rset = stmt.executeQuery(query);
+            String prevPublisher = "";
+            while(rset.next()){
+                String currPublisher = rset.getString("publisher_name");
+                if(!currPublisher.equals(prevPublisher)) System.out.println("=================");
+                System.out.println("Order to: " + currPublisher + " placed at: " + rset.getString("date_time") +" for " + rset.getString("title") + " / " + rset.getString("isbn") + " x" + rset.getString("number_purchased"));
+                prevPublisher = currPublisher;
+            }
+            
+        }catch (Exception sqle){
+            System.out.println("Exception: " + sqle);
+            return;
+        }
+    }
+
 
     public static void ownerLoop(Scanner scan){
         while(true){
@@ -408,7 +439,7 @@ public class LookInnaBook{
             }else if(selection.equals("4")){
                 //Function
             }else if(selection.equals("5")){
-                //Function
+                viewOrders(scan);
             }else if(selection.equals("q")){
                 break;
             }else{

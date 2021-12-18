@@ -23,7 +23,7 @@ insert into author values(9,'Banana Yoshimoto');
 insert into author values(10,'William Shakespeare');
 insert into publisher values('Pseudorandom House', 123456789012, '15 Melancholy Way, Ottawa, ON, H0H 0H0', 'contact@pseudorandomhouse.ca', 6135551111);
 insert into publisher values('Flightless Bird', 098765432109, '88 Snowbelle Street, Ottawa, ON, H0H 0H0', 'contact@flightlessbirdpublishing.net', 6135552222);
-insert into publisher values('Post-Secondary University Press', 102938475610, '31 Rusborough Road, Ottawa, ON, H0H 0H0', 'contact-press@post-secondaryuniversty.edu', 6135552222);
+insert into publisher values('Post-Secondary University Press', 102938475610, '31 Rusborough Road, Ottawa, ON, H0H 0H0', 'contact-press@post-secondaryuniversty.edu', 6135553333);
 insert into book values(9780261102354, 'Lord of the Rings: The Fellowship of the Ring', 10.99, 10.1, 448, 13, 'Fantasy', 'Pseudorandom House');
 insert into book values(9780261102361, 'Lord of the Rings: The Two Towers', 10.99, 10.1, 464, 14, 'Fantasy', 'Pseudorandom House');
 insert into book values(9780261102378, 'Lord of the Rings: The Return of the King', 10.99, 10.1, 464, 15, 'Fantasy', 'Pseudorandom House');

@@ -4,7 +4,7 @@ create table customer
 	 address		varchar(100), 
 	 credit_card	numeric(16,0),
      email          varchar(50),
-     phone_number   numeric(10,0),
+     phone_number   numeric(10,0) check (phone_number > 999999999),
 	 primary key (customer_username)
 	);
 
@@ -19,7 +19,7 @@ create table publisher
 	 bank_account	numeric(12,0),
 	 address		varchar(100),
 	 email			varchar(50),
-	 phone_number	numeric(10,0),
+	 phone_number	numeric(10,0) check (phone_number > 999999999),
 	 primary key (publisher_name)
 	);
 
