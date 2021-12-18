@@ -436,9 +436,9 @@ public class LookInnaBook{
 
             String query = null;
             if(salesVsExpenditures){
-                query = "select price, percentage_to_publisher from purchase natural join shopping_cart natural join in_cart natural join book;";
+                query = "select price, percentage_to_publisher, quantity from purchase natural join shopping_cart natural join in_cart natural join book;";
             }else{
-                query = "select price, percentage_to_publisher, " + salesBy + " from purchase natural join shopping_cart natural join in_cart natural join book natural join wrote natural join author order by " + salesBy + ";";
+                query = "select price, percentage_to_publisher, quantity, " + salesBy + " from purchase natural join shopping_cart natural join in_cart natural join book natural join wrote natural join author order by " + salesBy + ";";
             }
 
             ResultSet rset = stmt.executeQuery(query);
@@ -464,7 +464,7 @@ public class LookInnaBook{
                     netTotal.add(0.0);
                     elementsOfCategory.add(category);
                 }
-                double currPrice = Double.parseDouble(rset.getString("price"));
+                double currPrice = Double.parseDouble(rset.getString("price")) * Integer.parseInt(rset.getString("quantity"));
                 grossTotal.set(index, grossTotal.get(index)+ currPrice);
                 double currExpense = (Double.parseDouble(rset.getString("percentage_to_publisher"))/100)*currPrice;
                 expenses.set(index, expenses.get(index)+currExpense);
