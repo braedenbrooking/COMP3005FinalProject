@@ -67,38 +67,38 @@ insert into book values(9780143128571, 'Romeo and Juliet', 13.50, 2.5, 176, 11, 
 insert into book values(9780143128564, 'Macbeth', 13.50, 2.5, 144, 10, 'Classic', 'Post-Secondary University Press');
 
 -- Create the stock orders for the above books
-insert into stock_order values('2021-12-18T10:17:44.300283500', 'Pseudorandom House', 9780261102354, 13);
-insert into stock_order values('2021-12-18T10:18:44.300283500', 'Pseudorandom House', 9780261102361, 14);
-insert into stock_order values('2021-12-18T10:19:44.300283500', 'Pseudorandom House', 9780261102378, 15);
-insert into stock_order values('2021-12-18T10:20:44.300283500', 'Pseudorandom House', 9780261102736, 20);
-insert into stock_order values('2021-12-18T10:21:44.300283500', 'Pseudorandom House', 9780007458424, 10);
+insert into stock_order values('2021-12-18T10:17:44.300283500', 9780261102354, 13);
+insert into stock_order values('2021-12-18T10:18:44.300283500', 9780261102361, 14);
+insert into stock_order values('2021-12-18T10:19:44.300283500', 9780261102378, 15);
+insert into stock_order values('2021-12-18T10:20:44.300283500', 9780261102736, 20);
+insert into stock_order values('2021-12-18T10:21:44.300283500', 9780007458424, 10);
 
-insert into stock_order values('2021-12-18T10:22:44.300283500', 'Flightless Bird', 9781400079278, 10);
-insert into stock_order values('2021-12-18T10:23:44.300283500', 'Flightless Bird', 9780375704024, 10);
-insert into stock_order values('2021-12-18T10:24:44.300283500', 'Flightless Bird', 9780385678025, 10);
+insert into stock_order values('2021-12-18T10:22:44.300283500', 9781400079278, 10);
+insert into stock_order values('2021-12-18T10:23:44.300283500', 9780375704024, 10);
+insert into stock_order values('2021-12-18T10:24:44.300283500', 9780385678025, 10);
 
-insert into stock_order values('2021-12-18T10:25:44.300283500', 'Post-Secondary University Press', 9781538713839, 10);
-insert into stock_order values('2021-12-18T10:26:44.300283500', 'Post-Secondary University Press', 9780316540711, 10);
-insert into stock_order values('2021-12-18T10:27:44.300283500', 'Post-Secondary University Press', 9780316499149, 50);
+insert into stock_order values('2021-12-18T10:25:44.300283500', 9781538713839, 10);
+insert into stock_order values('2021-12-18T10:26:44.300283500', 9780316540711, 10);
+insert into stock_order values('2021-12-18T10:27:44.300283500', 9780316499149, 50);
 
-insert into stock_order values('2021-12-18T10:28:44.300283500', 'Pseudorandom House', 9781982136079, 25);
-insert into stock_order values('2021-12-18T10:29:44.300283500', 'Pseudorandom House', 9780307743657, 25);
+insert into stock_order values('2021-12-18T10:28:44.300283500', 9781982136079, 25);
+insert into stock_order values('2021-12-18T10:29:44.300283500', 9780307743657, 25);
 
-insert into stock_order values('2021-12-18T10:30:44.300283500', 'Flightless Bird', 9780771008795, 15);
-insert into stock_order values('2021-12-18T10:31:44.300283500', 'Flightless Bird', 9780771009457, 14);
+insert into stock_order values('2021-12-18T10:30:44.300283500', 9780771008795, 15);
+insert into stock_order values('2021-12-18T10:31:44.300283500', 9780771009457, 14);
 
-insert into stock_order values('2021-12-18T10:32:44.300283500', 'Post-Secondary University Press', 9780345404473, 11);
-insert into stock_order values('2021-12-18T10:33:44.300283500', 'Post-Secondary University Press', 9780547572482, 11);
-insert into stock_order values('2021-12-18T10:34:44.300283500', 'Post-Secondary University Press', 9780547572178, 10);
+insert into stock_order values('2021-12-18T10:32:44.300283500', 9780345404473, 11);
+insert into stock_order values('2021-12-18T10:33:44.300283500', 9780547572482, 11);
+insert into stock_order values('2021-12-18T10:34:44.300283500', 9780547572178, 10);
 
-insert into stock_order values('2021-12-18T10:35:44.300283500', 'Pseudorandom House', 9780593357132, 17);
-insert into stock_order values('2021-12-18T10:36:44.300283500', 'Pseudorandom House', 9780553448122, 16);
+insert into stock_order values('2021-12-18T10:35:44.300283500', 9780593357132, 17);
+insert into stock_order values('2021-12-18T10:36:44.300283500', 9780553448122, 16);
 
-insert into stock_order values('2021-12-18T10:37:44.300283500', 'Flightless Bird', 9780802142443, 10);
+insert into stock_order values('2021-12-18T10:37:44.300283500', 9780802142443, 10);
 
-insert into stock_order values('2021-12-18T10:32:44.300283500', 'Post-Secondary University Press', 9780143128540, 12);
-insert into stock_order values('2021-12-18T10:32:44.300283500', 'Post-Secondary University Press', 9780143128571, 11);
-insert into stock_order values('2021-12-18T10:32:44.300283500', 'Post-Secondary University Press', 9780143128564, 10);
+insert into stock_order values('2021-12-18T10:38:44.300283500', 9780143128540, 12);
+insert into stock_order values('2021-12-18T10:39:44.300283500', 9780143128571, 11);
+insert into stock_order values('2021-12-18T10:40:44.300283500', 9780143128564, 10);
 
 -- Create the links between author and book
 insert into wrote values(1, 9780261102354);

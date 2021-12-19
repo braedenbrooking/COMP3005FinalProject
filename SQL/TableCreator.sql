@@ -75,22 +75,16 @@ create table purchase
 	 amount_paid	numeric(12,2),
 	 tracking_status	varchar(50),
 	 shopping_cart_id	numeric(12,0),
-	 customer_username	varchar(50),
 	 primary key(tracking_number),
 	 foreign key (shopping_cart_id) references shopping_cart
-	 	on delete set null,
-	 foreign key (customer_username) references customer
 	 	on delete set null
 	);
 
 create table stock_order
 	(date_time 			varchar(50),
-	 publisher_name		varchar(50),
 	 ISBN			numeric(13,0),
 	 number_purchased	numeric(4,0),
-	 primary key (date_time, publisher_name, ISBN),
-	 foreign key (publisher_name) references publisher
-	 	on delete cascade,
+	 primary key (date_time),
 	 foreign key (ISBN) references book
 	 	on delete cascade
 	);

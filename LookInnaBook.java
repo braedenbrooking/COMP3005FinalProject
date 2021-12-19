@@ -109,7 +109,7 @@ public class LookInnaBook{
                 query = "insert into book values(" + newBookIsbn + ", '" + newBookTitle + "', " + newBookPrice + ", " + newBookPercentage + ", " + newBookPages + ", " + newBookStock + ", '" + newBookGenre + "', '" + newBookPublisher + "');";
                 stmt.executeUpdate(query); // Insert book into db
                 String dateTime = LocalDateTime.now().toString();
-                query = "insert into stock_order values('" + dateTime + "', '" + newBookPublisher + "', " + newBookIsbn + ", " + newBookStock + ");";
+                query = "insert into stock_order values('" + dateTime + "', " + newBookIsbn + ", " + newBookStock + ");";
                 stmt.executeUpdate(query); // Order book from publisher
 
                 int index = 1;
@@ -1002,7 +1002,7 @@ public class LookInnaBook{
             }
             if(stock < 10){
                 String dateTime = LocalDateTime.now().toString();
-                query = "insert into stock_order values('" + dateTime + "', '" + publisher + "', " + isbn + ", " + 10 +");";
+                query = "insert into stock_order values('" + dateTime + "', " + isbn + ", " + 10 +");";
                 stmt.executeUpdate(query); // Just adds 10 to the stock
                 query = "update book set stock=stock+" + 10 + " where ISBN=" + isbn + ";";
                 stmt.executeUpdate(query); // Orders 10 more books from the publisher of the book
@@ -1103,7 +1103,7 @@ public class LookInnaBook{
                 trackingNumber = Integer.parseInt(rset.getString("count")) + 1;
             }
 
-            query = "insert into purchase values(" + trackingNumber + ", '" + dateTime + "', '" + shipping + "', '" + billing + "', " + creditCard + ", " + total + ", 'In-Transit', " + cartId +", '" + username + "');";
+            query = "insert into purchase values(" + trackingNumber + ", '" + dateTime + "', '" + shipping + "', '" + billing + "', " + creditCard + ", " + total + ", 'In-Transit', " + cartId +");";
             stmt.executeUpdate(query);
 
             System.out.println("Your Tracking Number: " + trackingNumber);
