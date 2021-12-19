@@ -25,6 +25,13 @@ public class LookInnaBook{
 
 
     //Owner Functions
+
+    /**
+    * This function is responsible for adding books to the database. It is called by the owner loop and loops until the user no longer wants
+    * to add more books. If the book added is from a publisher or author which is not in the database already, addPublisher or addAuthor is called
+    * @param scan This is used to get information from the user
+    * @return void
+    */
     public static void addBook(Scanner scan){
         try(
             Connection conn = DriverManager.getConnection(
@@ -33,7 +40,7 @@ public class LookInnaBook{
             );
             Statement stmt = conn.createStatement();
         ){
-            while(true){
+            while(true){ // Loop until the user no longer wants to add books
                 System.out.print("ISBN: ");
                 String newBookIsbn = scan.nextLine();
                 System.out.print("Title: ");
@@ -41,7 +48,7 @@ public class LookInnaBook{
                 System.out.print("Genre: ");
                 String newBookGenre = scan.nextLine();
                 String newBookPages = "";
-                while(true){
+                while(true){ // Loop until # of pages entered is numeric
                     System.out.print("Pages: ");
                     newBookPages = scan.nextLine();
                     if(!isNumeric(newBookPages)){
@@ -50,7 +57,7 @@ public class LookInnaBook{
                     break;
                 }
                 String newBookPrice = "";
-                while(true){
+                while(true){ // Loop until price entered is numeric
                     System.out.print("Price: ");
                     newBookPrice = scan.nextLine();
                     if(!isNumeric(newBookPrice)){
@@ -65,7 +72,7 @@ public class LookInnaBook{
                 String query = "select count(*) from publisher where publisher_name='" + newBookPublisher + "';";
                 ResultSet rset = stmt.executeQuery(query);
                 int count=0;
-                while(rset.next()){
+                while(rset.next()){ 
                     count = Integer.parseInt(rset.getString("count"));
                 }
 
@@ -75,18 +82,22 @@ public class LookInnaBook{
                 }
 
                 String newBookStock = "";
-                while(true){
+                while(true){ // Loop until # of copies to order entered is > 0 and numeric
                     System.out.print("# of " + newBookTitle + " to Purchase from Publisher: ");
                     newBookStock = scan.nextLine();
                     if(!isNumeric(newBookStock)){
                         System.out.println("Error: Must be numeric");
+                        continue;
+                    }else if(Integer.parseInt(newBookStock) <= 0){
+                        System.out.println("Must be greater than 0");
+                        continue;
                     }
                     break;
 
                 }
 
                 String newBookPercentage = "";
-                while(true){
+                while(true){ // Loop until price entered is numeric
                     System.out.print("% of sales to send Publisher: ");
                     newBookPercentage = scan.nextLine();
                     if(!isNumeric(newBookPercentage)){
@@ -96,10 +107,13 @@ public class LookInnaBook{
                 }
 
                 query = "insert into book values(" + newBookIsbn + ", '" + newBookTitle + "', " + newBookPrice + ", " + newBookPercentage + ", " + newBookPages + ", " + newBookStock + ", '" + newBookGenre + "', '" + newBookPublisher + "');";
-                stmt.executeUpdate(query);
+                stmt.executeUpdate(query); // Insert book into db
+                String dateTime = LocalDateTime.now().toString();
+                query = "insert into stock_order values('" + dateTime + "', '" + newBookPublisher + "', " + newBookIsbn + ", " + newBookStock + ");";
+                stmt.executeUpdate(query); // Order book from publisher
 
                 int index = 1;
-                while(true){
+                while(true){ //Add as many authors as necessary
                     System.out.print("Author #" + index + ": ");
                     String newBookAuthorName = scan.nextLine();
                     if(newBookAuthorName.equals("") && index>1){
@@ -115,21 +129,21 @@ public class LookInnaBook{
                     int newBookAuthorId = -1;
                     while(rset.next()){
                         count = Integer.parseInt(rset.getString("count"));
-                        if(count==0){
+                        if(count==0){ // Author's name is not in the database
                             newBookAuthorId = addAuthor(newBookAuthorName);
                             break;
-                        }else{
+                        }else{ // Author's name is in the database
                             query = "select title, author_id from author natural join wrote natural join book where name='" + newBookAuthorName + "' order by author_id;";
-                            ResultSet rset2 = stmt.executeQuery(query);
+                            ResultSet rset2 = stmt.executeQuery(query); // Find all books by authors with that name
                             int prev = -1;
                             int finalAuthorId = -1;
                             while(rset2.next()){
                                 int currAuthorId = Integer.parseInt(rset2.getString("author_id"));
-                                if(currAuthorId == prev){
+                                if(currAuthorId == prev){ // Only need to check one book per author_id
                                     continue;
                                 }
                                 System.out.println("Is this the same author that wrote " + rset2.getString("title") + "? (y/n)");
-                                if(yesOrNo(scan)) finalAuthorId = currAuthorId;
+                                if(yesOrNo(scan)) finalAuthorId = currAuthorId; //Yes means they are the same author
                                 
                                 if(finalAuthorId != -1){
                                     break;
@@ -137,7 +151,7 @@ public class LookInnaBook{
                                     prev = currAuthorId;
                                 }
                             }
-                            if(finalAuthorId == -1){
+                            if(finalAuthorId == -1){ // This means that the author is a new author so we add them
                                 newBookAuthorId = addAuthor(newBookAuthorName);
                                 break;
                             }else{
@@ -147,10 +161,10 @@ public class LookInnaBook{
                         }
                     }
 
-                    if(newBookAuthorId == -1) throw new Exception("Error: Author ID invalid");
+                    if(newBookAuthorId == -1) throw new Exception("Error: Author ID invalid"); // This should theoretically never happen
 
                     query = "insert into wrote values(" + newBookAuthorId + ", " + newBookIsbn + ");";
-                    stmt.executeUpdate(query);
+                    stmt.executeUpdate(query); // Add new relationship between the book and author
 
                     System.out.println("Add another author?(y/n)");
                     if(!yesOrNo(scan)){
@@ -171,6 +185,11 @@ public class LookInnaBook{
         }
     }
 
+    /**
+    * Adds new authors to the database given the name of the author and assigns the new author an id.
+    * @param authorName The name of the author to be added, gotten from the user in addBooks()
+    * @return int This is the assigned author_id
+    */
     public static int addAuthor(String authorName){
         try(
             Connection conn = DriverManager.getConnection(
@@ -183,7 +202,7 @@ public class LookInnaBook{
             ResultSet rset = stmt.executeQuery(query);
             int nextId = 0;
             while(rset.next()){
-                nextId = Integer.parseInt(rset.getString("count")) + 1;
+                nextId = Integer.parseInt(rset.getString("count")) + 1; // New id will just be the number of authors in the database +1
             }
             query = "insert into author values(" + nextId + ", '" + authorName + "');";
             stmt.executeUpdate(query);
@@ -194,6 +213,12 @@ public class LookInnaBook{
         }
     }
 
+    /**
+    * Adds new publishers to the database by prompting the user for information
+    * @param scan This is used to get information from the user
+    * @param publisherName This is the name of the publisher, gotten from the user in addBooks()
+    * @return boolean true if succesfull; false otherwise
+    */
     public static boolean addPublisher(Scanner scan, String publisherName){
         try(
             Connection conn = DriverManager.getConnection(
@@ -233,6 +258,12 @@ public class LookInnaBook{
         }   
     }
 
+    /**
+    * This function is responsible for removing books from the database. It is called by the owner loop and loops until the user no longer wants
+    * to remove books. If the book removed is only from a publisher or author, removePublisher or removeAuthor is called
+    * @param scan This is used to get information from the user
+    * @return void
+    */
     public static void removeBook(Scanner scan){
         try(
             Connection conn = DriverManager.getConnection(
@@ -250,22 +281,21 @@ public class LookInnaBook{
                     System.out.println("Error: Not numeric please try again");
                     continue;
                 }
-
                 String query = "select count(*), author_id from wrote where author_id in (select author_id from wrote where ISBN=" + isbn + ") group by author_id;";
                 ResultSet rset = stmt.executeQuery(query);
-                boolean bookDoesNotExistFlag = false;
+                boolean bookDoesNotExistFlag = true;;
                 while(rset.next()){
                     int count = Integer.parseInt(rset.getString("count"));
                     if(count == 0){
-                        System.out.println("That book does not exist in the database");
-                        bookDoesNotExistFlag = true;
                         break;
                     }else if(count == 1){
+                        bookDoesNotExistFlag = false;
                         removeAuthor(rset.getString("author_id"));
                     }
                 }
 
                 if(bookDoesNotExistFlag){
+                    System.out.println("That book does not exist in the database");
                     continue;
                 }
 
@@ -285,7 +315,7 @@ public class LookInnaBook{
 
                 query = "delete from book where ISBN=" + isbn + ";";
                 stmt.executeUpdate(query); 
-                System.out.println(isbn + " was succesfully delted");
+                System.out.println(isbn + " was succesfully deleted");
             }
 
 
@@ -295,6 +325,11 @@ public class LookInnaBook{
         }
     }
 
+    /**
+    * This function is responsible for removing authors given an author id
+    * @param authorId This is the id of the author that will be removed, gotten from the user in removeBooks
+    * @return boolean true if succesfull; false otherwise
+    */
     public static boolean removeAuthor(String authorId){
         try(
             Connection conn = DriverManager.getConnection(
@@ -314,6 +349,11 @@ public class LookInnaBook{
         }
     }
 
+    /**
+    * This function is responsible for removing publishers given a name
+    * @param authorId This is the name of the publisher that will be removed, gotten from the user in removeBooks
+    * @return boolean true if succesfull; false otherwise
+    */
     public static boolean removePublisher(String publisherName){
         try(
             Connection conn = DriverManager.getConnection(
@@ -332,6 +372,11 @@ public class LookInnaBook{
         }
     }
 
+    /**
+    * This function is for viewing information about any/all publishers
+    * @param scan This is used to get information from the user
+    * @return void
+    */
     public static void viewPublisher(Scanner scan){
         try(
             Connection conn = DriverManager.getConnection(
@@ -367,6 +412,11 @@ public class LookInnaBook{
         }
     }
 
+    /**
+    * This function prints all books published by a specific publisher
+    * @param publisherName The name of the publisher that published the books
+    * @return void
+    */
     public static void viewBooksByPublisher(String publisherName){
         try(
             Connection conn = DriverManager.getConnection(
@@ -386,6 +436,11 @@ public class LookInnaBook{
         }
     }
 
+    /**
+    * This function lists all orders made by the book store to 
+    * @param publisherName The name of the publisher that published the books
+    * @return void
+    */
     public static void viewOrders(Scanner scan){
         try(
             Connection conn = DriverManager.getConnection(
@@ -406,7 +461,7 @@ public class LookInnaBook{
             String prevPublisher = "";
             while(rset.next()){
                 String currPublisher = rset.getString("publisher_name");
-                if(!currPublisher.equals(prevPublisher)) System.out.println("=================");
+                if(!currPublisher.equals(prevPublisher)) System.out.println("===" + currPublisher + "===");
                 System.out.println("Order to: " + currPublisher + " placed at: " + rset.getString("date_time") +" for " + rset.getString("title") + " / " + rset.getString("isbn") + " x" + rset.getString("number_purchased"));
                 prevPublisher = currPublisher;
             }
@@ -417,6 +472,12 @@ public class LookInnaBook{
         }
     }
 
+    /**
+    * This function calculates the gross sales, expenses, and net sales for the whole bookstore or can be grouped by on of the 
+    * collumns of purchase, book, or author
+    * @param scan This is used to get information from the user
+    * @return void
+    */
     public static void viewSalesReport(Scanner scan){
         try(
             Connection conn = DriverManager.getConnection(
@@ -442,7 +503,7 @@ public class LookInnaBook{
             }
 
             ResultSet rset = stmt.executeQuery(query);
-            ArrayList<Double> grossTotal = new ArrayList<Double>();
+            ArrayList<Double> grossTotal = new ArrayList<Double>(); // Each element of these lists correspond to an element of the category
             ArrayList<Double> expenses = new ArrayList<Double>();
             ArrayList<Double> netTotal = new ArrayList<Double>();
             ArrayList<String> elementsOfCategory = new ArrayList<String>();
@@ -489,7 +550,11 @@ public class LookInnaBook{
         }
     }
 
-
+    /**
+    * This function acts as a menu for the owner interface
+    * @param scan This is used to get information from the user
+    * @return void
+    */
     public static void ownerLoop(Scanner scan){
         while(true){
             System.out.println();
@@ -518,13 +583,18 @@ public class LookInnaBook{
                 break;
             }else{
                 System.out.println("Invalid Option");
-                System.out.println("Please select only 1-4 or q");
+                System.out.println("Please select only 1-5 or q");
             }
         }
     }
 
 
     //Helper Functions
+    /**
+    * This is a helper function for asking the user to enter y for yes or n for no
+    * @param scan This is used to get information from the user
+    * @return boolean returns true on 'y' and false on 'n'
+    */
     public static boolean yesOrNo(Scanner scan){
         while(true){
             String selection = scan.nextLine();
@@ -538,6 +608,11 @@ public class LookInnaBook{
         }
     }
 
+    /**
+    * This is a helper function for ensuring a string is numeric
+    * @param str The string which is being checked if its numeric
+    * @return boolean returns true if its numeric and false otherwise
+    */
     public static boolean isNumeric(String str){
         try{
             Double.parseDouble(str);
@@ -549,6 +624,13 @@ public class LookInnaBook{
 
 
     // Customer Functions
+    /**
+    * This function searches for books based on search criteria given by the user. Then, the user is prompted if they
+    * want to add to their cart
+    * @param scan This is used to get information from the user
+    * @param username This is the user's username to identify them in the customer table
+    * @return none
+    */
     public static void searchForBooks(Scanner scan, String username){
         try(
             Connection conn = DriverManager.getConnection(
@@ -557,17 +639,17 @@ public class LookInnaBook{
             );
             Statement stmt = conn.createStatement();
         ){
-            System.out.println("Connected!");
+            
             
             while(true){
                 System.out.println("Book Search: ");
                 System.out.println("Enter the following: (or just enter if not applicable)");
 
 
-                String[] prompts = {"Title", "Author", "Publisher", "Genre", "More than __ Pages", "Less than __ Pages", "More than $__", "Less than $__"};
+                String[] prompts = {"Title", "Author", "Publisher", "Genre", "More than __ Pages", "Less than __ Pages", "More than $__", "Less than $__"}; // Prompts for the search criteria
                 String[] selections = new String[8];
-                String[] columns = {"title", "name", "publisher", "genre", "pages", "pages", "price", "price"};
-                for(int i=0; i<selections.length; i++){
+                String[] columns = {"title", "name", "publisher", "genre", "pages", "pages", "price", "price"}; // Collumns of the database table
+                for(int i=0; i<selections.length; i++){ // Gets the criteria of the user
                     System.out.print(prompts[i] + ": ");
                     String currentSelection = scan.nextLine();
                     if(currentSelection.equals("")){
@@ -581,7 +663,7 @@ public class LookInnaBook{
                 }
 
                 String query = "select title, name, price, pages, genre, stock, ISBN from book natural join wrote natural join author ";
-                for(int i=0; i<selections.length; i++){
+                for(int i=0; i<selections.length; i++){ // Checks if all fields were left blank
                     if (selections[i] != null){
                         query += "where ";
                         break;
@@ -590,7 +672,7 @@ public class LookInnaBook{
 
                 
                 String and = "";
-                for(int i=0; i<selections.length; i++){
+                for(int i=0; i<selections.length; i++){ // Adds any search criteria to the query
                     if(selections[i] == null){
                         continue;
                     }else if(i<4){
@@ -606,10 +688,10 @@ public class LookInnaBook{
                 query += " order by name, title;";
                 ResultSet rset = stmt.executeQuery(query);
                 ArrayList<ArrayList<String>> bookList = new ArrayList<ArrayList<String>>();
-                while(rset.next()){
+                while(rset.next()){ // Collects data retrieved by the query
                     ArrayList<String> bookinfo = new ArrayList<String>();
                     String title = rset.getString("title");
-                    while(title.length()<45){
+                    while(title.length()<45){ // Padding to make the output look nice
                         title += " ";
                     }
                     String name = rset.getString("name");
@@ -633,8 +715,8 @@ public class LookInnaBook{
 
 
                     boolean bookAlreadyFound = false;
-                    for(int i=0; i<bookList.size(); i++){
-                        if(bookList.get(i).contains(isbn)){
+                    for(int i=0; i<bookList.size(); i++){ 
+                        if(bookList.get(i).contains(isbn)){ // If the book is already in the database it means the book has multiple authors
                             bookAlreadyFound = true;
                             String replacement = bookList.get(i).get(1).stripTrailing() + " & " + name.stripTrailing();
                             while(replacement.length()<35){
@@ -656,6 +738,7 @@ public class LookInnaBook{
                     }
                     System.out.println();
                 }
+                //Now that the user can see the books, they can start adding to their cart
                 System.out.println("Enter the numbers you'd like to add to your cart: ('end' when done)");
                 ArrayList<String> addToCartItems = new ArrayList<String>();
                 while(true){
@@ -676,7 +759,7 @@ public class LookInnaBook{
                     }
                     int quantityAsInt = Integer.parseInt(quantity);
                     int itemAsInt = Integer.parseInt(item);
-                    int maximumQuantity = Math.min(quantityAsInt, Integer.parseInt(bookList.get(itemAsInt).get(5)));
+                    int maximumQuantity = Math.min(quantityAsInt, Integer.parseInt(bookList.get(itemAsInt).get(5))); // Only can add a max of how many are in stock at the moment
                         
                     for(int i=0; i<maximumQuantity; i++)
                         addToCartItems.add(bookList.get(itemAsInt).get(bookList.get(itemAsInt).size()-1));
@@ -699,6 +782,12 @@ public class LookInnaBook{
         }
     }
 
+    /**
+    * This function adds books to the cart corresponding to the id given
+    * @param cartId The id of the cart we are adding items to
+    * @param isbns List of ISBNs corresponding to books in the database that need to be added. The number of duplicates is the quantity to be added
+    * @return none
+    */
     public static void addToCart(String cartId, ArrayList<String> isbns){
         try(
             Connection conn = DriverManager.getConnection(
@@ -707,8 +796,6 @@ public class LookInnaBook{
             );
             Statement stmt = conn.createStatement();
         ){
-            System.out.println("Connected!");
-
             if(cartId == null){
                 System.out.println("Error No Shopping Cart");
                 return;
@@ -717,7 +804,7 @@ public class LookInnaBook{
             String query = "select isbn, quantity from in_cart where shopping_cart_id='" + cartId + "';";
             ResultSet rset = stmt.executeQuery(query);
 
-            while(rset.next()){
+            while(rset.next()){ // We need to add the items already in the cart to the list of isbns
                 String curISBN = rset.getString("ISBN");
                 
                 for(int i=0; i<Integer.parseInt(rset.getString("quantity")); i++){
@@ -725,16 +812,16 @@ public class LookInnaBook{
                 }
             }
             query = "delete from in_cart where shopping_cart_id=" + cartId + ";";
-            stmt.executeUpdate(query);
+            stmt.executeUpdate(query); // Clear the cart
             Collections.sort(isbns);
             String prev = "";
             query = "";
-            for(int i=0; i<isbns.size(); i++){
+            for(int i=0; i<isbns.size(); i++){ // Add all the items in the list to the cart
                 if(isbns.get(i).equals(prev)){
                     continue;
                 }
                 int quant = 0;
-                for(int j=i; j<isbns.size(); j++){
+                for(int j=i; j<isbns.size(); j++){ // Count the number of duplicates in the list to get the quantity
                     if(isbns.get(i).equals(isbns.get(j))) quant++;
                 }
                 
@@ -742,7 +829,7 @@ public class LookInnaBook{
                 prev = isbns.get(i);
             }
 
-            stmt.executeUpdate(query);
+            stmt.executeUpdate(query); 
 
         }catch (Exception sqle){
             System.out.println("Exception: " + sqle);
@@ -750,6 +837,11 @@ public class LookInnaBook{
         }
     }
 
+    /**
+    * This function finds the active cart for the username since the user can have multiple carts which have already been checked out
+    * @param username The username of the user whom we are finding the active cart
+    * @return String The id of the current cart
+    */
     public static String getCurrentCartId(String username){
         try(
             Connection conn = DriverManager.getConnection(
@@ -761,7 +853,7 @@ public class LookInnaBook{
             String query = "select shopping_cart_id from shopping_cart where customer_username='" + username + "' order by shopping_cart_id;";
             ResultSet rset = stmt.executeQuery(query);
             String cartId = null;
-            while(rset.next()){
+            while(rset.next()){ // The current cart is always the one with the largest id value associated with that user (see createCart)
                 cartId = rset.getString("shopping_cart_id");
             }
             return cartId;
@@ -771,6 +863,12 @@ public class LookInnaBook{
         }
     }
 
+    /**
+    * This function lists the items in the user's cart and then prompts the user to remove and/or checkout
+    * @param scan This is used to get information from the user
+    * @param username This is the user's username to identify them in the customer table
+    * @return none
+    */
     public static void viewCart(Scanner scan, String username){
         try(
             Connection conn = DriverManager.getConnection(
@@ -779,10 +877,10 @@ public class LookInnaBook{
             );
             Statement stmt = conn.createStatement();
         ){
-            System.out.println("Connected!");
+            
             String cartId = getCurrentCartId(username);
             double total = 0.0;
-            ArrayList<String> isbnsInCart = new ArrayList<String>();
+            ArrayList<String> isbnsInCart = new ArrayList<String>(); // Kept Separately to help with future functions 
             ArrayList<ArrayList<String>> booksInCart = new ArrayList<ArrayList<String>>();
             while(true){
                 String query = "select title, price, quantity, ISBN from shopping_cart natural join in_cart natural join book where shopping_cart_id=" + cartId + " order by title;";
@@ -807,11 +905,12 @@ public class LookInnaBook{
                     booksInCart.add(currentBookInfo);
                 }
 
-                if(!(booksInCart.size()>0)){
+                if(!(booksInCart.size()>0)){ //If cart is empty, no need to ask about removing or checking out so we just return to the menu
                     System.out.println("Your cart is empty!");
                     return;
                 }
 
+                // Now we can list the items
                 System.out.println("=== " + username + "'s Cart ===");
                 System.out.println("x: Title                                        \tPrice\tQuantity");
                 for(int i=0; i<booksInCart.size(); i++){
@@ -830,7 +929,7 @@ public class LookInnaBook{
                 System.out.println("Would you like to remove anything? (y/n)");
                 boolean wantToRemove = yesOrNo(scan);
                 if(wantToRemove) System.out.println("Enter the index you want to remove: ('end' to stop)");
-                ArrayList<String> removeIsbns = new ArrayList<String>();
+                ArrayList<String> removeIsbns = new ArrayList<String>(); // Keep track of all ISBNs of books we want to remove
                 while(wantToRemove){
                     System.out.print("Item: ");
                     String item = scan.nextLine();
@@ -868,7 +967,7 @@ public class LookInnaBook{
             boolean successfulPurchase = false;
             if(yesOrNo(scan)) successfulPurchase = checkout(scan, cartId, username, total);
 
-            if(successfulPurchase){
+            if(successfulPurchase){ // If the purchase was successfull we need to make sure the stock of all books purchased did not drop below the threshold
                 for(int i=0; i<isbnsInCart.size(); i++){
                     checkStock(isbnsInCart.get(i));
                 }
@@ -880,6 +979,11 @@ public class LookInnaBook{
         }
     }
 
+    /**
+    * This function checks that the stock of a given book has not fallen below the threshold (10)
+    * @param isbn ISBN of book whose stock needs checking
+    * @return none
+    */
     public static void checkStock(String isbn){
         try(
             Connection conn = DriverManager.getConnection(
@@ -899,9 +1003,9 @@ public class LookInnaBook{
             if(stock < 10){
                 String dateTime = LocalDateTime.now().toString();
                 query = "insert into stock_order values('" + dateTime + "', '" + publisher + "', " + isbn + ", " + 10 +");";
-                stmt.executeUpdate(query);
+                stmt.executeUpdate(query); // Just adds 10 to the stock
                 query = "update book set stock=stock+" + 10 + " where ISBN=" + isbn + ";";
-                stmt.executeUpdate(query);
+                stmt.executeUpdate(query); // Orders 10 more books from the publisher of the book
             }
         }catch (Exception sqle){
             System.out.println("Exception: " + sqle);
@@ -909,6 +1013,15 @@ public class LookInnaBook{
         }
     }
 
+    /**
+    * This function checks out the user using their active cart. The user has the option to use the credit card, billing, and/or shipping information
+    * from their profile or they can provide new information
+    * @param scan This is used to get information from the user
+    * @param cartId The active shopping cart of the user
+    * @param username This is the user's username to identify them in the customer table
+    * @param total The total amount the user will need to pay
+    * @return boolean true on successful purchase; false otherwise
+    */
     public static boolean checkout(Scanner scan, String cartId, String username, double total){
         try(
             Connection conn = DriverManager.getConnection(
@@ -921,8 +1034,6 @@ public class LookInnaBook{
             
             System.out.println("Would you like to use the credit card and billing information from your profile? (y/n)");
             boolean useProfileCardAndBilling = yesOrNo(scan);
-            System.out.println("Would you like to use the shipping address from your profile? (y/n)");
-            boolean useProfileShipping = yesOrNo(scan);
 
             String shipping = "";
             String billing = "";
@@ -948,6 +1059,8 @@ public class LookInnaBook{
                     break;
                 }
             }
+            System.out.println("Would you like to use the shipping address from your profile? (y/n)");
+            boolean useProfileShipping = yesOrNo(scan);
             if(!useProfileShipping){
                System.out.print("Shipping Address: ");
                 while(true){
@@ -960,7 +1073,7 @@ public class LookInnaBook{
                 } 
             }
 
-            if(useProfileCardAndBilling && useProfileShipping){
+            if(useProfileCardAndBilling && useProfileShipping){ // In the cases where they want to use their profile info, we must retrieve it
                 query = "select credit_card, address from customer where customer_username='" + username + "';";
                 ResultSet rset = stmt.executeQuery(query);
                 while(rset.next()){
@@ -981,12 +1094,12 @@ public class LookInnaBook{
                     shipping = rset.getString("address");
                 }  
             }
-            String dateTime = LocalDateTime.now().toString();
+            String dateTime = LocalDateTime.now().toString(); // Timestamp for the purchase record
 
             query = "select count(*) from purchase;";
             ResultSet rset = stmt.executeQuery(query);
             int trackingNumber = 0;
-            while(rset.next()){
+            while(rset.next()){ // Calculate tracking number
                 trackingNumber = Integer.parseInt(rset.getString("count")) + 1;
             }
 
@@ -996,18 +1109,21 @@ public class LookInnaBook{
             System.out.println("Your Tracking Number: " + trackingNumber);
             System.out.println("Thank You for your Purchase! :)");
 
-            createCart(username);
+            createCart(username); //Must create a new cart since the relation between carts and purchases is 1-to-1
             return true;
-
-            
-
-
         }catch (Exception sqle){
             System.out.println("Exception: " + sqle);
             return false;
         }
     }
 
+    /**
+    * This function removes 1-many books from a given shopping cart
+    * @param scan This is used to get information from the user
+    * @param cartId The active shopping cart of the user
+    * @param removeIsbns The list of books to remove from the cart
+    * @return none
+    */
     public static void removeFromCart(Scanner scan, String cartId, ArrayList<String> removeIsbns){
         try(
             Connection conn = DriverManager.getConnection(
@@ -1019,7 +1135,7 @@ public class LookInnaBook{
             String query = "select ISBN, quantity from in_cart where shopping_cart_id=" + cartId + ";";
             ResultSet rset = stmt.executeQuery(query);
             ArrayList<String> isbnsInCart = new ArrayList<String>();
-            while(rset.next()){
+            while(rset.next()){ // Get all items currently in the cart 
                 int currentQuantity = Integer.parseInt(rset.getString("quantity"));
                 String currentIsbn = rset.getString("ISBN");
                 for(int i=0; i<currentQuantity; i++){
@@ -1027,7 +1143,7 @@ public class LookInnaBook{
                 }
             }
             
-            for(int i=0; i<removeIsbns.size(); i++){
+            for(int i=0; i<removeIsbns.size(); i++){ // Loop over the lists and remove the elements of removeIsbns from isbnsInCart
                 for(int j=0; j<isbnsInCart.size(); j++){
                     if(isbnsInCart.get(j).equals(removeIsbns.get(i))){
                         query = "update book set stock=stock+1 where ISBN=" + isbnsInCart.get(j) + ";";
@@ -1037,12 +1153,10 @@ public class LookInnaBook{
                         break;
                     }
                 }
-                
             }
             query = "delete from in_cart where shopping_cart_id=" + cartId + ";";
-            stmt.executeUpdate(query);
-            if(isbnsInCart.size()>0) addToCart(cartId, isbnsInCart);
-
+            stmt.executeUpdate(query); // Clear the cart
+            if(isbnsInCart.size()>0) addToCart(cartId, isbnsInCart); // Add the items still in the cart back into the cart using addToCart
 
         }catch (Exception sqle){
             System.out.println("Exception: " + sqle);
@@ -1050,6 +1164,12 @@ public class LookInnaBook{
         }
     }
 
+    /**
+    * This function lists the purchases of a particular user or just one purchase of the user's choice
+    * @param scan This is used to get information from the user
+    * @param username This is the user's username to identify them in the customer table
+    * @return none
+    */
     public static void trackOrders(Scanner scan, String username){
         try(
             Connection conn = DriverManager.getConnection(
@@ -1059,7 +1179,7 @@ public class LookInnaBook{
             Statement stmt = conn.createStatement();
         ){
             String tracking_number = null;
-            while(true){
+            while(true){ // Allow the user to view all of their purchases
                 System.out.print("Enter Tracking Number (just enter for all orders on your account): ");
                 String selection = scan.nextLine();
                 if(selection.equals("")){
@@ -1083,9 +1203,9 @@ public class LookInnaBook{
             ResultSet rset = stmt.executeQuery(query);
 
             String prev = "";
-            while(rset.next()){
+            while(rset.next()){ 
                 String currTrackNum = rset.getString("tracking_number");
-                if(!(currTrackNum.equals(prev))){
+                if(!(currTrackNum.equals(prev))){ //There will be duplicates of all this information for each different item in purchase so this ensure its only printed once per purchase
                     System.out.println("===============================================");
                     System.out.println("Order Purchased: " + rset.getString("date_time_of_purchase"));
                     System.out.println("Ordered By: " + rset.getString("customer_username"));
@@ -1104,6 +1224,11 @@ public class LookInnaBook{
         }
     }
 
+    /**
+    * This function acts as a menu for the customer interface
+    * @param scan This is used to get information from the user
+    * @return void
+    */
     public static void customerLoop(Scanner scan){
         //Login
         System.out.println("Connecting to Database...");
@@ -1115,8 +1240,7 @@ public class LookInnaBook{
             );
             Statement stmt = conn.createStatement();
         ){
-            System.out.println("Connected!");
-            while(true){
+            while(true){ // Gets username from customer to log them in
                 System.out.println("Please enter your username: (or 'back' to return to main menu)");
                 username = scan.nextLine();
                 if(username.equals("back") || username.equals("")) return;
@@ -1136,7 +1260,7 @@ public class LookInnaBook{
             return;
         }
 
-        //Loop
+        //Customer menu
         while(true){
             System.out.println();
             System.out.println();
@@ -1162,7 +1286,12 @@ public class LookInnaBook{
             }
         }
     }
-
+    
+    /**
+    * This function creates a new cart for the user of the given username
+    * @param username This is the user's username to identify them in the customer table
+    * @return boolean true if successful; false otherwise
+    */
     public static boolean createCart(String username){
         try(
             Connection conn = DriverManager.getConnection(
@@ -1171,11 +1300,11 @@ public class LookInnaBook{
             );
             Statement stmt = conn.createStatement();
         ){
-            System.out.println("Connected!");
+            
             String query = "select count(*) from shopping_cart;";
             ResultSet rset = stmt.executeQuery(query);
             int newCartId = 0;
-            while(rset.next()){
+            while(rset.next()){ // Next cart id is always just the number of carts in the database + 1
                 newCartId = Integer.parseInt(rset.getString("count"));
             }
             newCartId++;
@@ -1190,6 +1319,11 @@ public class LookInnaBook{
         }
     }
 
+    /**
+    * This function creates a new customer account for the user and prompts for all the necessary information
+    * @param scan This is used to get information from the user
+    * @return boolean true if successful; false otherwise
+    */
     public static void registerCustomer(Scanner scan){ 
         System.out.println("Connecting to Database...");
         try(
@@ -1199,7 +1333,7 @@ public class LookInnaBook{
             );
             Statement stmt = conn.createStatement();
         ){
-            System.out.println("Connected!");
+            
             boolean flag = true;
             while(flag){ // Loop until user successfully created
                 try{
@@ -1208,7 +1342,7 @@ public class LookInnaBook{
                     final String[] prompts = {"Username: ", "Name: ", "Address: ", "Credit Card: ", "Email: ", "Phone Number: "};
 
                     String[] newUserInfo = new String[6];
-                    for(int i=0; i<newUserInfo.length; i++){
+                    for(int i=0; i<newUserInfo.length; i++){ // Prompts and collects information
                         System.out.print(prompts[i]);
                         newUserInfo[i] = scan.nextLine();
                         if(newUserInfo[i].equals("")){
@@ -1216,7 +1350,7 @@ public class LookInnaBook{
                             i--;
                         }
                     }
-                    while(true){
+                    while(true){ // Checks if the username is already taken 
                         String query = "select count(*) from customer where customer_username='" + newUserInfo[0] + "';";
                         ResultSet rset = stmt.executeQuery(query);
                         boolean usernameExists = false;
@@ -1234,7 +1368,7 @@ public class LookInnaBook{
                     System.out.println("Registering...");
                     stmt.executeUpdate(query);
 
-                    flag = !createCart(newUserInfo[0]);
+                    flag = !createCart(newUserInfo[0]); // If the cart is succesfully created the user is fully registered
 
                 }catch (Exception e){
                     System.out.println("Exception: " + e);
@@ -1249,6 +1383,11 @@ public class LookInnaBook{
 
     }
 
+    /**
+    * This function acts as a main menu 
+    * @param args Command line arguments
+    * @return void
+    */
     public static void main(String[] args){
         Scanner scan = new Scanner(System.in);
         System.out.println("==========================");

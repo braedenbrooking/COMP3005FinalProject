@@ -27,7 +27,7 @@ create table book
 	(ISBN			numeric(13,0), 
 	 title			varchar(50) not null, 
 	 price			numeric(12,2) check (price > 0),
-	 percentage_to_publisher 	numeric(4,2) check (percentage_to_publisher < 100),
+	 percentage_to_publisher 	numeric(4,2) check (percentage_to_publisher < 100 and percentage_to_publisher > 0),
      pages          numeric(5,0) check (pages > 0),
      stock		    numeric(5,0),
 	 genre			varchar(50),
@@ -92,5 +92,5 @@ create table stock_order
 	 foreign key (publisher_name) references publisher
 	 	on delete cascade,
 	 foreign key (ISBN) references book
-	 	on delete set null
+	 	on delete cascade
 	);
