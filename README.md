@@ -5,7 +5,7 @@
  - Ensure you have a version of java installed (Java 17 or later recommended)
  - Compile with "javac COMP3005FinalProject/LookInnaBook.java" from the parent directory
  - Ensure you have the proper driver downloaded (Likely "postgresql-42.2.24.jar" or similar)
- - If you were able to properly install the driver you should be able to run it with "java COMP3005FinalProject/LookInnaBook.java"
+ - If you were able to properly install the driver you should be able to run it with "java COMP3005FinalProject/LookInnaBook"
  - If you were unable to properly install the driver (like me) you can run it with "java -cp .;"\<path to driver>" COMP3005FinalProject/LookInnaBook
 
 ## Brief Usage Instructions
